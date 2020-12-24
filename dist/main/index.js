@@ -14508,6 +14508,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
     args.push(coverageFile);
   }
 
+  args.push('--output-file');
   args.push(mergedCoverageFile);
 
   await exec.exec('lcov', args);
