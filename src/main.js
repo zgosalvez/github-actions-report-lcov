@@ -2,18 +2,19 @@ const artifact = require('@actions/artifact');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
+const glob = require('@actions/glob');
 const lcovTotal = require("lcov-total");
+const os = require('os');
 const path = require('path');
 
 async function run() {
   try {
     await exec.exec('sudo apt-get install lcov');
 
-    console.log(github.context.action_path);
-    console.log(process.env.GITHUB_ACTION_PATH);
-
-    const tmpPath = path.resolve(github.context.action_path, 'tmp');
-    const coverageFiles = core.getInput('coverage-files');
+    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const coverageFilesPattern = core.getInput('coverage-files');
+    const globber = await glob.create(coverageFilesPattern);
+    const coverageFiles = await globber.glob();
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -21,13 +22,13 @@ async function run() {
     const summary = await summarize(coverageFile);
     const gitHubToken = core.getInput('github-token').trim();
 
-    if (gitHubToken !== '' && github.context.event_name === 'pull_request') {
+    if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
       await github.getOctokit(gitHubToken)
         .issues.createComment({
-          owner: github.context.owner,
-          repo: github.context.repo,
-          issue_number: github.context.event.number,
-          body: summary,
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          issue_number: github.context.payload.pull_request.number,
+          body: `<pre>${summary}</pre>`,
         });
     }
 
@@ -40,34 +41,45 @@ async function run() {
 }
 
 async function genhtml(coverageFiles, tmpPath) {
-  const artifactPath = path.resolve(tmpPath, 'html');
+  const artifactName = core.getInput('artifact-name').trim();
+  const artifactPath = path.resolve(tmpPath, 'html').trim();
+  const args = [...coverageFiles];
 
-  await exec.exec('genhtml', [
-    coverageFiles,
-    '--output-directory',
-    artifactPath,
-  ]);
+  args.push('--output-directory');
+  args.push(artifactPath);
+
+  await exec.exec('genhtml', args);
+
+  const globber = await glob.create(`${artifactPath}/**`);
+  const htmlFiles = await globber.glob();
 
   await artifact
     .create()
     .uploadArtifact(
-      core.getInput('artifact-name').trim(),
-      [artifactPath],
-      tmpPath,
+      artifactName,
+      htmlFiles,
+      artifactPath,
       { continueOnError: false },
     );
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
-  const coverageFile = path.resolve(tmpPath, 'lcov.info');
-  const lcovResultMerger = path.resolve(github.context.action_path, 'node_modules/.bin/lcov-result-merger');
+  // This is broken for some reason:
+  //const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
+  const mergedCoverageFile = tmpPath + '/lcov.info';
+  const args = [];
 
-  await exec.exec(lcovResultMerger, [
-    coverageFiles,
-    coverageFile,
-  ]);
+  for (const coverageFile of coverageFiles) {
+    args.push('--add-tracefile');
+    args.push(coverageFile);
+  }
 
-  return coverageFile;
+  args.push('--output-file');
+  args.push(mergedCoverageFile);
+
+  await exec.exec('lcov', args);
+
+  return mergedCoverageFile;
 }
 
 async function summarize(coverageFile) {
@@ -92,7 +104,8 @@ async function summarize(coverageFile) {
   const lines = output
     .trim()
     .split(/\r?\n/)
-    .shift(); // Removes "Reading tracefile..."
+  
+  lines.shift(); // Removes "Reading tracefile..."
 
   return lines.join('\n');
 }
