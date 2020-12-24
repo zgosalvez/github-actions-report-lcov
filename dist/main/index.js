@@ -14455,18 +14455,13 @@ async function run() {
     const summary = await summarize(coverageFile);
     const gitHubToken = core.getInput('github-token').trim();
 
-    console.log('TESTHELLO');
-    console.log(gitHubToken !== '');
-    console.log(github.context);
-    console.log(github.context.eventName);
-    console.log(github.context.payload);
     if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
       await github.getOctokit(gitHubToken)
         .issues.createComment({
           owner: github.context.repo.owner,
           repo: github.context.repo.repo,
           issue_number: github.context.payload.pull_request.number,
-          body: summary,
+          body: `<pre>${summary}</pre>`,
         });
     }
 
