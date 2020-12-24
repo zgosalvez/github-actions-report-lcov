@@ -2,6 +2,7 @@ const artifact = require('@actions/artifact');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
+const glob = require('@actions/glob');
 const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
@@ -39,14 +40,13 @@ async function run() {
 
 async function genhtml(coverageFiles, tmpPath) {
   const artifactPath = path.resolve(tmpPath, 'html');
+  const globber = await glob.create(coverageFiles);
+  const args = await globber.glob();
 
-  await exec.exec('ls -la');
-  await exec.exec('ls -la coverage');
-  await exec.exec('genhtml', [
-    coverageFiles,
-    '--output-directory',
-    artifactPath,
-  ]);
+  args.push('--output-directory');
+  args.push(artifactPath);
+
+  await exec.exec('genhtml', args);
 
   await artifact
     .create()
