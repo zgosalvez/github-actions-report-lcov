@@ -14462,7 +14462,7 @@ async function run() {
     if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
-      let body = `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit [${shaShort}](/${github.context.payload.pull_request.number}/commits/${sha}) during run [${github.context.runId}](../actions/runs/${github.context.runId})\n<pre>${summary}</pre>`;
+      let body = `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during run [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}</pre>`;
 
       if (isFailure) {
         body += `\n:no_entry: ${errorMessage}`;
