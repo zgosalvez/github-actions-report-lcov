@@ -25,14 +25,14 @@ async function run() {
     console.log('TESTHELLO');
     console.log(gitHubToken !== '');
     console.log(github.context);
-    console.log(github.context.event_name);
-    console.log(github.context.event);
-    if (gitHubToken !== '' && github.context.event_name === 'pull_request') {
+    console.log(github.context.eventName);
+    console.log(github.context.payload);
+    if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
       await github.getOctokit(gitHubToken)
         .issues.createComment({
-          owner: github.context.owner,
-          repo: github.context.repo,
-          issue_number: github.context.event.number,
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          issue_number: github.context.payload.pull_request.number,
           body: summary,
         });
     }
