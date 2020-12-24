@@ -104,7 +104,8 @@ async function summarize(coverageFile) {
   const lines = output
     .trim()
     .split(/\r?\n/)
-    .shift(); // Removes "Reading tracefile..."
+  
+  lines.shift(); // Removes "Reading tracefile..."
 
   return lines.join('\n');
 }
