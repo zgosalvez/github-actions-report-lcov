@@ -14492,7 +14492,7 @@ async function genhtml(coverageFiles, tmpPath) {
     .create()
     .uploadArtifact(
       artifactName,
-      [path.resolve(artifactPath, artifactName)],
+      [path.resolve(artifactPath, `${artifactName}.zip`)],
       tmpPath,
       { continueOnError: false },
     );
