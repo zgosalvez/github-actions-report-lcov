@@ -20,23 +20,28 @@ async function run() {
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const summary = await summarize(coverageFile);
+    const totalCoverage = lcovTotal(coverageFile);
+    const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
+    let commentHead = `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit ${github.context.payload.pull_request.head.sha} during run [${github.context.runId}](../actions/runs/${github.context.runId})`;
+    const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
+
     console.log(github.context.payload.pull_request.head);
+
+    if (totalCoverage < minimumCoverage) {
+      core.setFailed(errorMessage);
+
+      commentHead += `\n:no_entry:${errorMessage}`;
+    }
+
     if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
       await github.getOctokit(gitHubToken)
         .issues.createComment({
           owner: github.context.repo.owner,
           repo: github.context.repo.repo,
           issue_number: github.context.payload.pull_request.number,
-          body: `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit ${github.context.payload.pull_request.head.sha} during run [${github.context.runId}](../actions/runs/${github.context.runId})\n<pre>${summary}</pre>`,
+          body: `${commentHead}\n<pre>${summary}</pre>`,
         });
-    }
-
-    const totalCoverage = lcovTotal(coverageFile);
-    const minimumCoverage = core.getInput('minimum-coverage');
-
-    if (totalCoverage < minimumCoverage) {
-      throw new Error(`The code coverage is too low. Expected at least ${minimumCoverage}.`);
     }
   } catch (error) {
     core.setFailed(error.message);
