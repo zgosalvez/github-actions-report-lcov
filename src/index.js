@@ -7,11 +7,12 @@ const path = require('path');
 
 async function run() {
   try {
-    await exec.exec('sudo apt-get install lcov');
-
+    console.log(github);
     console.log(github.context.action_path);
     console.log(github.action_path);
     console.log(process.env.GITHUB_ACTION_PATH);
+    
+    await exec.exec('sudo apt-get install lcov');
 
     const tmpPath = path.resolve(github.context.action_path, 'tmp');
     const coverageFiles = core.getInput('coverage-files');
