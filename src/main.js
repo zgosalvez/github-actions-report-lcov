@@ -3,21 +3,12 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
 const lcovTotal = require("lcov-total");
+const os = require('os');
 const path = require('path');
 
 async function run() {
   try {
-    console.log(github);
-    console.log(github.context.action_path);
-    console.log(github.action_path);
-    console.log(process.env);
-    console.log(process.env.GITHUB_ACTION_PATH);
-    console.log(process.env.GITHUB_WORKSPACE);
-    console.log(process.cwd); 
-    
-    await exec.exec('sudo apt-get install lcov');
-
-    const tmpPath = path.resolve(github.context.action_path, 'tmp');
+    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFiles = core.getInput('coverage-files');
 
     await genhtml(coverageFiles, tmpPath);

@@ -2,10 +2,10 @@
   "name": "github-actions-report-lcov",
   "version": "1.0.0",
   "description": "Report the code coverage from LCOV files",
-  "main": "dist/index.js",
+  "main": "dist/main/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "ncc build src/index.js -o dist --source-map --license licenses.txt"
+    "prepare": "ncc build src/main.js -o dist/main --source-map --license licenses.txt && ncc build src/post.js -o dist/post --source-map --license licenses.txt"
   },
   "repository": {
     "type": "git",
@@ -22,8 +22,11 @@
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0",
+    "@actions/io": "^1.0.2",
+    "install": "^0.13.0",
     "lcov-result-merger": "^3.1.0",
-    "lcov-total": "^1.0.5"
+    "lcov-total": "^1.0.5",
+    "npm": "^6.14.10"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.25.1",
