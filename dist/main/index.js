@@ -14445,7 +14445,9 @@ async function run() {
     await exec.exec('sudo apt-get install lcov');
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const coverageFiles = core.getInput('coverage-files');
+    const coverageFilesPattern = core.getInput('coverage-files');
+    const globber = await glob.create(coverageFilesPattern);
+    const coverageFiles = await globber.glob();
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -14474,8 +14476,7 @@ async function run() {
 async function genhtml(coverageFiles, tmpPath) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const globber = await glob.create(coverageFiles);
-  const args = await globber.glob();
+  const args = [...coverageFiles];
 
   args.push('--output-directory');
   args.push(artifactPath);
@@ -14499,15 +14500,19 @@ async function genhtml(coverageFiles, tmpPath) {
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
-  const coverageFile = __webpack_require__.ab + "github-actions-report-lcov/" + tmpPath + '/lcov.info';
-  const lcovResultMerger = path.resolve(github.context.action_path, 'node_modules/.bin/lcov-result-merger');
+  const mergedCoverageFile = __webpack_require__.ab + "github-actions-report-lcov/" + tmpPath + '/lcov.info';
+  const args = [];
 
-  await exec.exec(lcovResultMerger, [
-    coverageFiles,
-    coverageFile,
-  ]);
+  for (const coverageFile of coverageFiles) {
+    args.push('--add-tracefile');
+    args.push(coverageFile);
+  }
 
-  return coverageFile;
+  args.push(mergedCoverageFile);
+
+  await exec.exec('lcov', args);
+
+  return mergedCoverageFile;
 }
 
 async function summarize(coverageFile) {
