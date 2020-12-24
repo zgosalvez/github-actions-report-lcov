@@ -1,0 +1,23 @@
+# https://github.com/actions/javascript-action
+
+name: 'Report LCOV'
+description: 'Report the code coverage from LCOV files'
+author: 'Zennon Gosalvez'
+inputs:
+  coverage-files:
+    description: 'The coverage files to scan. For example, `coverage/lcov.*.info`'
+    required: true
+  artifact-name:
+    description: 'The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory'
+    required: true
+  minimum-coverage:
+    description: 'The minimum coverage to pass the check. Optional. Default: `0` (always passes)'
+    default: 0
+  github-token:
+    description: 'Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
+branding:
+  icon: umbrella
+  color: purple
