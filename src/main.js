@@ -22,6 +22,11 @@ async function run() {
     const summary = await summarize(coverageFile);
     const gitHubToken = core.getInput('github-token').trim();
 
+    console.log('TESTHELLO');
+    console.log(gitHubToken !== '');
+    console.log(github.context);
+    console.log(github.context.event_name);
+    console.log(github.context.event);
     if (gitHubToken !== '' && github.context.event_name === 'pull_request') {
       await github.getOctokit(gitHubToken)
         .issues.createComment({
