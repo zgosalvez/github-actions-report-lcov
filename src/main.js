@@ -9,6 +9,8 @@ const path = require('path');
 
 async function run() {
   try {
+    console.log(process.cwd);
+    
     await exec.exec('sudo apt-get install lcov');
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
@@ -50,24 +52,20 @@ async function genhtml(coverageFiles, tmpPath) {
 
   await exec.exec('genhtml', args);
 
-  await exec.exec('zip', [
-    '--recurse-paths',
-    artifactName,
-    '.',
-  ], { cwd: artifactPath });
-
   await artifact
     .create()
     .uploadArtifact(
       artifactName,
-      [path.resolve(artifactPath, `${artifactName}.zip`)],
-      tmpPath,
+      [artifactPath],
+      artifactPath,
       { continueOnError: false },
     );
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
   const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
+  console.log(tmpPath);
+  console.log(mergedCoverageFile);
   const args = [];
 
   for (const coverageFile of coverageFiles) {
