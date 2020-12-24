@@ -13462,7 +13462,10 @@ async function run() {
     console.log(github);
     console.log(github.context.action_path);
     console.log(github.action_path);
+    console.log(process.env);
     console.log(process.env.GITHUB_ACTION_PATH);
+    console.log(process.env.GITHUB_WORKSPACE);
+    console.log(process.cwd); 
     
     await exec.exec('sudo apt-get install lcov');
 
