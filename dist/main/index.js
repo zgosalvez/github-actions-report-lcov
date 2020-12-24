@@ -14456,15 +14456,18 @@ async function run() {
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
-    let commentHead = `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit ${github.context.payload.pull_request.head.sha} during run [${github.context.runId}](../actions/runs/${github.context.runId})`;
+    const sha = github.context.payload.pull_request.head.sha;
+    const shaShort = sha.substr(0, 7);
+    let body = ```
+### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit [${shaShort}](/${github.context.payload.pull_request.number}/commits/${sha}) during run [${github.context.runId}](../actions/runs/${github.context.runId})
+<pre>${summary}</pre>
+```;
     const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
-
-    console.log(github.context.payload.pull_request.head);
 
     if (totalCoverage < minimumCoverage) {
       core.setFailed(errorMessage);
 
-      commentHead += `\n:no_entry:${errorMessage}`;
+      body += `\n:no_entry: ${errorMessage}`;
     }
 
     if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
@@ -14473,7 +14476,7 @@ async function run() {
           owner: github.context.repo.owner,
           repo: github.context.repo.repo,
           issue_number: github.context.payload.pull_request.number,
-          body: `${commentHead}\n<pre>${summary}</pre>`,
+          body: body,
         });
     }
   } catch (error) {
