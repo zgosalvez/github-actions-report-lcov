@@ -14454,19 +14454,22 @@ async function run() {
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const summary = await summarize(coverageFile);
     const gitHubToken = core.getInput('github-token').trim();
-
+    console.log(github.context);
     if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
       await github.getOctokit(gitHubToken)
         .issues.createComment({
           owner: github.context.repo.owner,
           repo: github.context.repo.repo,
           issue_number: github.context.payload.pull_request.number,
-          body: `<pre>${summary}</pre>Commit: <code>${ github.context.sha }</code>`,
+          body: `<pre>${summary}</pre>Commit: <code>${github.context.sha}</code>`,
         });
     }
 
-    if (lcovTotal(coverageFile) < core.getInput('minimum-coverage')) {
-      throw new Error('The code coverage is too low.');
+    const totalCoverage = lcovTotal(coverageFile);
+    const minimumCoverage = core.getInput('minimum-coverage');
+
+    if (totalCoverage < minimumCoverage) {
+      throw new Error(`The code coverage is too low. Expected at least ${minimumCoverage}.`);
     }
   } catch (error) {
     core.setFailed(error.message);
