@@ -39,7 +39,8 @@ async function run() {
 }
 
 async function genhtml(coverageFiles, tmpPath) {
-  const artifactPath = path.resolve(tmpPath, 'html');
+  const artifactName = core.getInput('artifact-name').trim();
+  const artifactPath = path.resolve(tmpPath, 'html').trim();
   const globber = await glob.create(coverageFiles);
   const args = await globber.glob();
 
@@ -48,11 +49,17 @@ async function genhtml(coverageFiles, tmpPath) {
 
   await exec.exec('genhtml', args);
 
+  await exec.exec('zip', [
+    '--recurse-paths',
+    artifactName,
+    '.',
+  ], { cwd: artifactPath });
+
   await artifact
     .create()
     .uploadArtifact(
-      core.getInput('artifact-name').trim(),
-      [artifactPath],
+      artifactName,
+      [path.resolve(artifactPath, artifactName)],
       tmpPath,
       { continueOnError: false },
     );
