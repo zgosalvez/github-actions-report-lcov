@@ -20,6 +20,9 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 ### Outputs
 None.
 
+Sample comment:
+![Screenshot](assets/comment.png)
+
 ### Common workflow
 
 ```yaml
