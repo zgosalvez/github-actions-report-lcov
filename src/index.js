@@ -10,6 +10,7 @@ async function run() {
     await exec.exec('sudo apt-get install lcov');
 
     console.log(github.context.action_path);
+    console.log(github.action_path);
     console.log(process.env.GITHUB_ACTION_PATH);
 
     const tmpPath = path.resolve(github.context.action_path, 'tmp');
