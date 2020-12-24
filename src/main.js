@@ -9,8 +9,6 @@ const path = require('path');
 
 async function run() {
   try {
-    console.log(process.cwd);
-    
     await exec.exec('sudo apt-get install lcov');
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
@@ -52,11 +50,14 @@ async function genhtml(coverageFiles, tmpPath) {
 
   await exec.exec('genhtml', args);
 
+  const globber = await glob.create(`${artifactPath}/**`);
+  const htmlFiles = await globber.glob();
+
   await artifact
     .create()
     .uploadArtifact(
       artifactName,
-      [artifactPath],
+      htmlFiles,
       artifactPath,
       { continueOnError: false },
     );
