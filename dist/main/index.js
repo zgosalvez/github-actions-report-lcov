@@ -14456,21 +14456,18 @@ async function run() {
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
-    const sha = github.context.payload.pull_request.head.sha;
-    const shaShort = sha.substr(0, 7);
-    let body = ```
-### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit [${shaShort}](/${github.context.payload.pull_request.number}/commits/${sha}) during run [${github.context.runId}](../actions/runs/${github.context.runId})
-<pre>${summary}</pre>
-```;
     const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
-
-    if (totalCoverage < minimumCoverage) {
-      core.setFailed(errorMessage);
-
-      body += `\n:no_entry: ${errorMessage}`;
-    }
+    const isFailure = totalCoverage < minimumCoverage;
 
     if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
+      const sha = github.context.payload.pull_request.head.sha;
+      const shaShort = sha.substr(0, 7);
+      let body = `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit [${shaShort}](/${github.context.payload.pull_request.number}/commits/${sha}) during run [${github.context.runId}](../actions/runs/${github.context.runId})\n<pre>${summary}</pre>`;
+
+      if (isFailure) {
+        body += `\n:no_entry: ${errorMessage}`;
+      }
+
       await github.getOctokit(gitHubToken)
         .issues.createComment({
           owner: github.context.repo.owner,
@@ -14478,6 +14475,10 @@ async function run() {
           issue_number: github.context.payload.pull_request.number,
           body: body,
         });
+    }
+
+    if (isFailure) {
+      throw Error(errorMessage);
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -14548,7 +14549,7 @@ async function summarize(coverageFile) {
   const lines = output
     .trim()
     .split(/\r?\n/)
-  
+
   lines.shift(); // Removes "Reading tracefile..."
 
   return lines.join('\n');
