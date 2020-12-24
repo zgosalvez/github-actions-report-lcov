@@ -28,7 +28,7 @@ async function run() {
           owner: github.context.repo.owner,
           repo: github.context.repo.repo,
           issue_number: github.context.payload.pull_request.number,
-          body: `<pre>${summary}</pre>`,
+          body: `<pre>${summary}</pre>Commit: <code>${ github.context.sha }</code>`,
         });
     }
 
