@@ -158,14 +158,16 @@ async function detail(coverageFile, octokit) {
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
 
-  lines = lines.filter(line => {
+  lines = lines.filter((line, index) => {
+    if (index <= 2) return true; // Include header
+
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
 
-      if (line.startsWith(changedFile)) return false;
+      if (line.startsWith(changedFile)) return true;
     }
 
-    return true;
+    return false;
   });
 
   if (lines.length === 3) { // Only the header remains
