@@ -162,17 +162,17 @@ async function detail(coverageFile, octokit) {
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
 
-      if (line.includes(changedFile)) return true;
+      if (line.startsWith(changedFile)) return false;
     }
 
-    return false;
+    return true;
   });
 
   if (lines.length === 3) { // Only the header remains
     return ' n/a';
   }
 
-  return '\n' + lines.join('\n  ');
+  return '\n  ' + lines.join('\n  ');
 }
 
 run();
