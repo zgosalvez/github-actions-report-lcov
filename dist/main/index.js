@@ -14487,6 +14487,7 @@ async function run() {
 }
 
 async function genhtml(coverageFiles, tmpPath) {
+  const workingDirectory = core.getInput('working-directory').trim() || '.';
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles];
@@ -14494,6 +14495,7 @@ async function genhtml(coverageFiles, tmpPath) {
   args.push('--output-directory');
   args.push(artifactPath);
 
+  await exec.exec('cd', workingDirectory);
   await exec.exec('genhtml', args);
 
   const globber = await glob.create(`${artifactPath}/**`);
