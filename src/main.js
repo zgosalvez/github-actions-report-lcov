@@ -16,9 +16,7 @@ async function run() {
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
 
-    const projectDir = core.getInput('project-dir') || '';
-
-    await genhtml(coverageFiles, path.resolve(tmpPath, projectDir));
+    await genhtml(coverageFiles, tmpPath);
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
@@ -56,6 +54,7 @@ async function run() {
 }
 
 async function genhtml(coverageFiles, tmpPath) {
+  const workingDirectory = core.getInput('working-directory').trim() || '.';
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles];
@@ -63,6 +62,7 @@ async function genhtml(coverageFiles, tmpPath) {
   args.push('--output-directory');
   args.push(artifactPath);
 
+  await exec.exec('cd', workingDirectory);
   await exec.exec('genhtml', args);
 
   const globber = await glob.create(`${artifactPath}/**`);

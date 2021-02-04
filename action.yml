@@ -4,9 +4,6 @@ name: 'Report LCOV'
 description: 'Report the code coverage from LCOV files'
 author: 'Zennon Gosalvez'
 inputs:
-  project-dir:
-    description: 'The custom directory. Use only if your project folder is not in the root folder (e.g. in case your repo contains multiple projects)'
-    required: false
   coverage-files:
     description: 'The coverage files to scan. For example, `coverage/lcov.*.info`'
     required: true
@@ -18,6 +15,8 @@ inputs:
     default: 0
   github-token:
     description: 'Set the GitHub token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``'
+  working-directory:
+    description: 'The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`'
 runs:
   using: 'node12'
   main: 'dist/main/index.js'
