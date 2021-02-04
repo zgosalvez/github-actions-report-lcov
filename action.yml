@@ -15,6 +15,8 @@ inputs:
     default: 0
   github-token:
     description: 'Set the GitHub token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``'
+  working-directory:
+    description: 'The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`'
 runs:
   using: 'node12'
   main: 'dist/main/index.js'

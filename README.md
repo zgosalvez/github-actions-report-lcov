@@ -16,6 +16,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `artifact-name`: The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory
 - `minimum-coverage`: The minimum coverage to pass the check. Optional. Default: `0` (always passes)
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
+- `working-directory`: The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`
 
 ### Outputs
 None.
@@ -46,6 +47,7 @@ jobs:
         minimum-coverage: 90
         artifact-name: code-coverage-report
         github-token: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: apps/my-first-app
 ```
 
 ### Flutter Workflows
