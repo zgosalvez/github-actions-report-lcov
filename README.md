@@ -16,6 +16,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `artifact-name`: The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory
 - `minimum-coverage`: The minimum coverage to pass the check. Optional. Default: `0` (always passes)
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
+- `project-dir`: [Optional] The custom directory. Use only if your project folder is not in the root folder (e.g. in case your repo contains multiple projects)
 
 ### Outputs
 None.
@@ -42,6 +43,8 @@ jobs:
     - name: Report code coverage
       uses: zgosalvez/github-actions-report-lcov@v1
       with:
+        # Optional: use only if your project not located on root.
+        # project-dir: apps/my-first-app
         coverage-files: coverage/lcov.*.info
         minimum-coverage: 90
         artifact-name: code-coverage-report

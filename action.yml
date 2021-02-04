@@ -4,6 +4,9 @@ name: 'Report LCOV'
 description: 'Report the code coverage from LCOV files'
 author: 'Zennon Gosalvez'
 inputs:
+  project-dir:
+    description: 'The custom directory. Use only if your project folder is not in the root folder (e.g. in case your repo contains multiple projects)'
+    required: false
   coverage-files:
     description: 'The coverage files to scan. For example, `coverage/lcov.*.info`'
     required: true

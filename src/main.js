@@ -16,7 +16,9 @@ async function run() {
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
 
-    await genhtml(coverageFiles, tmpPath);
+    const projectDir = core.getInput('project-dir') || '';
+
+    await genhtml(coverageFiles, path.resolve(tmpPath, projectDir));
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
