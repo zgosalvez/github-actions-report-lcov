@@ -25,32 +25,82 @@ async function run() {
     const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
     const isFailure = totalCoverage < minimumCoverage;
 
-    if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
+    if (gitHubToken !== '') {
       const octokit = await github.getOctokit(gitHubToken);
-      const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
-      const sha = github.context.payload.pull_request.head.sha;
-      const shaShort = sha.substr(0, 7);
-      let body = `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>`;
+      const prs = pullRequests(github);
+      for (let i=0; i < prs.length; i++) {
+        const pr = prs[i];
+        console.log(`Calculating coverage for PR ${pr.number}, sha ${pr.head.sha}...`);
+        const summary = await summarize(coverageFile);
+        const details = await detail(coverageFile, pr, octokit);
+        const shaShort = pr.head.sha.substr(0, 7);
+        let body = `### Coverage of commit [<code>${shaShort}</code>](${pr.number}/commits/${pr.head.sha})
+<pre>${summary}
 
-      if (isFailure) {
-        body += `\n:no_entry: ${errorMessage}`;
-      }
+Files changed coverage rate:${details}</pre>
 
-      await octokit.issues.createComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: github.context.payload.pull_request.number,
-        body: body,
-      });
+[Download coverage report](../actions/runs/${github.context.runId})
+`;
+
+        if (isFailure) {
+          body += `\n:no_entry: ${errorMessage}`;
+        }
+
+        console.log("Posting body:");
+        console.log(body);
+
+        try {
+          await octokit.issues.createComment({
+            issue_number: pr.number,
+            body: body,
+            ...ownerRepo(pr.url)
+          });
+        } catch (error) {
+          console.log("Unable to post coverage report.");
+          console.log(error);
+        }
+      };
+    } else {
+      console.log("No GITHUB_TOKEN, not posting.");
     }
 
     if (isFailure) {
       throw Error(errorMessage);
     }
   } catch (error) {
+    console.error(error);
     core.setFailed(error.message);
   }
+}
+
+function pullRequests(github) {
+  if (github.context.eventName === "pull_request") {
+    return [github.context.payload.pull_request];
+  };
+  if (github.context.eventName == "workflow_run") {
+    if (github.context.payload.workflow_run.pull_requests.length > 0) {
+      return github.context.payload.workflow_run.pull_requests;
+    }
+  }
+  if (!!process.env.PR_SHA && !!process.env.PR_NUMBER &&
+      process.env.PR_SHA != "" && process.env.PR_NUMBER != "") {
+    return [{
+      number: process.env.PR_NUMBER,
+      head: {
+        sha: process.env.PR_SHA,
+      },
+      url: `https://api.github.com/repos/${github.context.repo.owner}/${github.context.repo.repo}/pulls/${process.env.PR_NUMBER}`
+    }];
+  }
+  return [];
+}
+
+function ownerRepo(url) {
+  const match = url.match(/\/repos\/(?<owner>[^\/]+)\/(?<repo>[^\/]+)\/pulls\//);
+  return {
+    owner: match[1],
+    repo: match[2],
+  };
 }
 
 async function genhtml(coverageFiles, tmpPath) {
@@ -116,14 +166,14 @@ async function summarize(coverageFile) {
 
   const lines = output
     .trim()
-    .split(/\r?\n/)
+    .split(/\r?\n/);
 
   lines.shift(); // Removes "Reading tracefile..."
 
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, pull_request, octokit) {
   let output = '';
 
   const options = {};
@@ -144,17 +194,15 @@ async function detail(coverageFile, octokit) {
 
   let lines = output
     .trim()
-    .split(/\r?\n/)
+    .split(/\r?\n/);
 
   lines.shift(); // Removes "Reading tracefile..."
   lines.pop(); // Removes "Total..."
   lines.pop(); // Removes "========"
-
   const listFilesOptions = octokit
     .pulls.listFiles.endpoint.merge({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      pull_number: github.context.payload.pull_request.number,
+      pull_number: pull_request.number,
+      ...ownerRepo(pull_request.url)
     });
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
