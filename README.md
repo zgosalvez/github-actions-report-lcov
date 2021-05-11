@@ -41,7 +41,7 @@ jobs:
       uses: actions/checkout@v2
     # ... Generate LCOV files or download it from a different job
     - name: Report code coverage
-      uses: zgosalvez/github-actions-report-lcov@v1
+      uses: mbta/github-actions-report-lcov@v1
       with:
         coverage-files: coverage/lcov.*.info
         minimum-coverage: 90
@@ -49,10 +49,6 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         working-directory: apps/my-first-app
 ```
-
-### Flutter Workflows
-
-This is used in my opinionated [GitHub Actions: Flutter Workflows](https://github.com/zgosalvez/github-actions-flutter-workflows) repository along with other actions for a complete end-to-end DevOps experience.
 
 ## License
 The scripts and documentation in this project are released under the [MIT License](LICENSE)
