@@ -62,6 +62,12 @@ async function genhtml(coverageFiles, tmpPath) {
   args.push('--output-directory');
   args.push(artifactPath);
 
+  const branchCoverage = core.getInput('branch-coverage').trim() || 'true';
+  if (branchCoverage === 'true') {
+    args.push('--rc');
+    args.push('lcov_branch_coverage=1');
+  }
+
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
   const globber = await glob.create(`${artifactPath}/**`);
