@@ -12,11 +12,12 @@ async function run() {
     await exec.exec('sudo apt-get install lcov');
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const workingDirectory = ensureTrailingSlash(core.getInput('working-directory').trim() || './');
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
 
-    await genhtml(coverageFiles, tmpPath);
+    await genhtml(coverageFiles, tmpPath, workingDirectory);
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
@@ -32,7 +33,7 @@ async function run() {
         const pr = prs[i];
         console.log(`Calculating coverage for PR ${pr.number}, sha ${pr.head.sha}...`);
         const summary = await summarize(coverageFile);
-        const details = await detail(coverageFile, pr, octokit);
+        const details = await detail(coverageFile, pr, octokit, workingDirectory);
         const shaShort = pr.head.sha.substr(0, 7);
         let body = `### Coverage of commit [<code>${shaShort}</code>](${pr.number}/commits/${pr.head.sha})
 <pre>${summary}
@@ -103,8 +104,15 @@ function ownerRepo(url) {
   };
 }
 
-async function genhtml(coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory').trim() || './';
+function ensureTrailingSlash(path) {
+  if (path.endsWith("/")) {
+    return path;
+  }
+
+  return path + "/";
+}
+
+async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles];
@@ -173,7 +181,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, pull_request, octokit) {
+async function detail(coverageFile, pull_request, octokit, workingDirectory) {
   let output = '';
 
   const options = {};
@@ -209,6 +217,10 @@ async function detail(coverageFile, pull_request, octokit) {
 
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header
+
+    if (workingDirectory !== "./") {
+        line = workingDirectory + line;
+    }
 
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
