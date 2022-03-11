@@ -14442,7 +14442,7 @@ const path = __webpack_require__(5622);
 
 async function run() {
   try {
-    await exec.exec('sudo apt-get install lcov');
+    await exec.exec('sudo apt-get install -y lcov');
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const workingDirectory = ensureTrailingSlash(core.getInput('working-directory').trim() || './');
@@ -14548,7 +14548,7 @@ function ensureTrailingSlash(path) {
 async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const args = [...coverageFiles];
+  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
   args.push('--output-directory');
   args.push(artifactPath);
