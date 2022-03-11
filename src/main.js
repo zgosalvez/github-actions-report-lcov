@@ -7,77 +7,10 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
-async function run() {
-  try {
-    await exec.exec('sudo apt-get install -y lcov');
-
-    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const workingDirectory = ensureTrailingSlash(core.getInput('working-directory').trim() || './');
-    const coverageFilesPattern = core.getInput('coverage-files');
-    const globber = await glob.create(coverageFilesPattern);
-    const coverageFiles = await globber.glob();
-
-    await genhtml(coverageFiles, tmpPath, workingDirectory);
-
-    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
-    const totalCoverage = lcovTotal(coverageFile);
-    const minimumCoverage = core.getInput('minimum-coverage');
-    const gitHubToken = core.getInput('github-token').trim();
-    const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
-    const isFailure = totalCoverage < minimumCoverage;
-
-    if (gitHubToken !== '') {
-      const octokit = await github.getOctokit(gitHubToken);
-      const prs = pullRequests(github);
-      for (let i=0; i < prs.length; i++) {
-        const pr = prs[i];
-        console.log(`Calculating coverage for PR ${pr.number}, sha ${pr.head.sha}...`);
-        const summary = await summarize(coverageFile);
-        const details = await detail(coverageFile, pr, octokit, workingDirectory);
-        const shaShort = pr.head.sha.substr(0, 7);
-        let body = `### Coverage of commit [<code>${shaShort}</code>](${pr.number}/commits/${pr.head.sha})
-<pre>${summary}
-
-Files changed coverage rate:${details}</pre>
-
-[Download coverage report](../actions/runs/${github.context.runId})
-`;
-
-        if (isFailure) {
-          body += `\n:no_entry: ${errorMessage}`;
-        }
-
-        console.log("Posting body:");
-        console.log(body);
-
-        try {
-          await octokit.issues.createComment({
-            issue_number: pr.number,
-            body: body,
-            ...ownerRepo(pr.url)
-          });
-        } catch (error) {
-          console.log("Unable to post coverage report.");
-          console.log(error);
-        }
-      };
-    } else {
-      console.log("No GITHUB_TOKEN, not posting.");
-    }
-
-    if (isFailure) {
-      throw Error(errorMessage);
-    }
-  } catch (error) {
-    console.error(error);
-    core.setFailed(error.message);
-  }
-}
-
 function pullRequests(github) {
   if (github.context.eventName === "pull_request") {
     return [github.context.payload.pull_request];
-  };
+  }
   if (github.context.eventName == "workflow_run") {
     if (github.context.payload.workflow_run.pull_requests.length > 0) {
       return github.context.payload.workflow_run.pull_requests;
@@ -97,7 +30,7 @@ function pullRequests(github) {
 }
 
 function ownerRepo(url) {
-  const match = url.match(/\/repos\/(?<owner>[^\/]+)\/(?<repo>[^\/]+)\/pulls\//);
+  const match = url.match(/\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pulls\//);
   return {
     owner: match[1],
     repo: match[2],
@@ -115,10 +48,7 @@ function ensureTrailingSlash(path) {
 async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
-
-  args.push('--output-directory');
-  args.push(artifactPath);
+  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1', '--output-directory', artifactPath];
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
@@ -236,6 +166,73 @@ async function detail(coverageFile, pull_request, octokit, workingDirectory) {
   }
 
   return '\n  ' + lines.join('\n  ');
+}
+
+async function run() {
+  try {
+    await exec.exec('sudo apt-get install -y lcov');
+
+    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const workingDirectory = ensureTrailingSlash(core.getInput('working-directory').trim() || './');
+    const coverageFilesPattern = core.getInput('coverage-files');
+    const globber = await glob.create(coverageFilesPattern);
+    const coverageFiles = await globber.glob();
+
+    await genhtml(coverageFiles, tmpPath, workingDirectory);
+
+    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    const totalCoverage = lcovTotal(coverageFile);
+    const minimumCoverage = core.getInput('minimum-coverage');
+    const gitHubToken = core.getInput('github-token').trim();
+    const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
+    const isFailure = totalCoverage < minimumCoverage;
+
+    if (gitHubToken !== '') {
+      const octokit = await github.getOctokit(gitHubToken);
+      const prs = pullRequests(github);
+      for (let i=0; i < prs.length; i++) {
+        const pr = prs[i];
+        console.log(`Calculating coverage for PR ${pr.number}, sha ${pr.head.sha}...`);
+        const summary = await summarize(coverageFile);
+        const details = await detail(coverageFile, pr, octokit, workingDirectory);
+        const shaShort = pr.head.sha.substr(0, 7);
+        let body = `### Coverage of commit [<code>${shaShort}</code>](${pr.number}/commits/${pr.head.sha})
+<pre>${summary}
+
+Files changed coverage rate:${details}</pre>
+
+[Download coverage report](../actions/runs/${github.context.runId})
+`;
+
+        if (isFailure) {
+          body += `\n:no_entry: ${errorMessage}`;
+        }
+
+        console.log("Posting body:");
+        console.log(body);
+
+        try {
+          await octokit.issues.createComment({
+            issue_number: pr.number,
+            body: body,
+            ...ownerRepo(pr.url)
+          });
+        } catch (error) {
+          console.log("Unable to post coverage report.");
+          console.log(error);
+        }
+      }
+    } else {
+      console.log("No GITHUB_TOKEN, not posting.");
+    }
+
+    if (isFailure) {
+      throw Error(errorMessage);
+    }
+  } catch (error) {
+    console.error(error);
+    core.setFailed(error.message);
+  }
 }
 
 run();
