@@ -25,7 +25,7 @@ async function run() {
     const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
     const isFailure = totalCoverage < minimumCoverage;
 
-    if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
+    if (gitHubToken !== '') {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit);
