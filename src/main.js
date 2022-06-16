@@ -33,7 +33,7 @@ async function run() {
     }
     if (!sha) sha = github.context.sha
 
-    if (gitHubToken !== '') {
+    if (prNumber && gitHubToken !== '') {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit, prNumber);
