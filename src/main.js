@@ -15,6 +15,7 @@ async function run() {
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
+    const updateComment = core.getInput('update-comment')
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -37,12 +38,40 @@ async function run() {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
+      const updateGitHubComment = commentId =>
+      octokit.issues.updateComment({
+        repo: github.context.repo.repo,
+        owner: github.context.repo.owner,
+        comment_id: commentId,
+        body,
+      })
+
+      if (updateComment) {
+        const issueComments = await octokit.issues.listComments({
+          repo: github.context.repo.repo,
+          owner: github.context.repo.owner,
+          issue_number: github.context.payload.pull_request.number,
+        })
+
+        const existingComment = issueComments.data.find(comment =>
+          comment.body.includes(commentIdentifier(options.workflowName)),
+        )
+
+        if (existingComment) {
+          await updateGitHubComment(existingComment.id)
+          return
+        }
+      }
+      else {
+
       await octokit.issues.createComment({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         issue_number: github.context.payload.pull_request.number,
         body: body,
       });
+
+      }
     }
 
     if (isFailure) {
