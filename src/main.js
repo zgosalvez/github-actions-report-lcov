@@ -7,6 +7,10 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
+function commentIdentifier(workflowName) {
+	return `### [LCOV](https://github.com/marketplace/actions/report-lcov) of commit`
+}
+
 async function run() {
   try {
     await exec.exec('sudo apt-get install -y lcov');
@@ -15,6 +19,7 @@ async function run() {
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
+    const updateComment = core.getInput('update-comment');
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -35,6 +40,33 @@ async function run() {
 
       if (isFailure) {
         body += `\n:no_entry: ${errorMessage}`;
+      }
+
+      const updateGitHubComment = commentId =>
+      octokit.issues.updateComment({
+        repo: github.context.repo.repo,
+        owner: github.context.repo.owner,
+        comment_id: commentId,
+        body,
+      })
+
+      if (updateComment == "true") {
+        const issueComments = await octokit.issues.listComments({
+          repo: github.context.repo.repo,
+          owner: github.context.repo.owner,
+          issue_number: github.context.payload.pull_request.number,
+        })
+
+        const existingComment = issueComments.data.find(comment =>
+          comment.body.includes(commentIdentifier(process.env.GITHUB_WORKFLOW)),
+        )
+
+        if (existingComment) {
+          console.log('Update Comment ID: ' + existingComment.id);
+          await updateGitHubComment(existingComment.id);
+          return
+        }
+        console.log('Comment does not exist, create a new one');
       }
 
       await octokit.issues.createComment({
