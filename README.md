@@ -18,6 +18,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
 - `working-directory`: The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`
 - `title-prefix`: A prefix before the title "LCOV of commit..." Optional. Default: ``
+- `update-comment`: Set to `true` to update previous code coverage comment if such exists. When set to `false` new comment is always created. Optional. Default: `false`
 
 ### Outputs
 - `total-coverage`: The total coverage from scanned files.
@@ -51,6 +52,7 @@ jobs:
         artifact-name: code-coverage-report
         github-token: ${{ secrets.GITHUB_TOKEN }}
         working-directory: apps/my-first-app
+        update-comment: true
 ```
 *Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
 
