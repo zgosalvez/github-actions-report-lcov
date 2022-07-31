@@ -17,7 +17,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `minimum-coverage`: The minimum coverage to pass the check. Optional. Default: `0` (always passes)
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
 - `working-directory`: The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`
-- `pr-number`: Number of the Pull Request. Optional.
+- `pr-number`: The number of pull request you want to process. In case you are not using `pull_request` trigger type in the workflow. Optional.
 
 ### Outputs
 None.
