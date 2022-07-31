@@ -37,12 +37,16 @@ async function run() {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
+      core.debug("Creating a comment in the PR.")
       await octokit.issues.createComment({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         issue_number: github.context.payload.pull_request.number,
         body: body,
       });
+    } else {
+      core.info("github-token received is empty. Skipping writing a comment in the PR.");
+      core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
     }
 
     if (isFailure) {

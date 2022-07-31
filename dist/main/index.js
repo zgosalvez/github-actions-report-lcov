@@ -17321,12 +17321,16 @@ async function run() {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
+      core.debug("Creating a comment in the PR.")
       await octokit.issues.createComment({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         issue_number: github.context.payload.pull_request.number,
         body: body,
       });
+    } else {
+      core.info("github-token received is empty. Skipping writing a comment in the PR.");
+      core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
     }
 
     if (isFailure) {
@@ -17381,7 +17385,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-  await exec.exec('lcov', args);
+  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
 
   return mergedCoverageFile;
 }
@@ -17402,6 +17406,8 @@ async function summarize(coverageFile) {
   await exec.exec('lcov', [
     '--summary',
     coverageFile,
+    '--rc',
+    'lcov_branch_coverage=1'
   ], options);
 
   const lines = output
@@ -17430,6 +17436,8 @@ async function detail(coverageFile, octokit) {
     '--list',
     coverageFile,
     '--list-full-path',
+    '--rc',
+    'lcov_branch_coverage=1',
   ], options);
 
   let lines = output
