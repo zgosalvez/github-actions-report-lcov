@@ -56,7 +56,6 @@ async function run() {
 async function genhtml(coverageFiles, tmpPath) {
   const workingDirectory = core.getInput('working-directory').trim() || './';
   const artifactName = core.getInput('artifact-name').trim();
-
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
@@ -82,7 +81,6 @@ async function genhtml(coverageFiles, tmpPath) {
   } else {
     core.info("Skip uploading artifacts");
   }
-
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
