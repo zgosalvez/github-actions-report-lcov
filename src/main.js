@@ -91,7 +91,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-  await exec.exec('lcov', args);
+  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
 
   return mergedCoverageFile;
 }
@@ -112,6 +112,8 @@ async function summarize(coverageFile) {
   await exec.exec('lcov', [
     '--summary',
     coverageFile,
+    '--rc',
+    'lcov_branch_coverage=1'
   ], options);
 
   const lines = output
@@ -140,6 +142,8 @@ async function detail(coverageFile, octokit) {
     '--list',
     coverageFile,
     '--list-full-path',
+    '--rc',
+    'lcov_branch_coverage=1',
   ], options);
 
   let lines = output
