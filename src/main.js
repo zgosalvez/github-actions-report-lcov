@@ -7,9 +7,17 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
+async function installPackage(packages) {
+  if (os.platform() === 'darwin') {
+    await exec.exec(`sudo brew install -y ${packages.join(' ')}`);
+  } else {
+    await exec.exec(`sudo apt-get install -y ${packages.join(' ')}`);
+  }
+}
+
 async function run() {
   try {
-    await exec.exec('sudo apt-get install -y lcov');
+    await installPackage(['lcov'])
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
