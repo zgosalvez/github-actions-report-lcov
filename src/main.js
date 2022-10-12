@@ -9,7 +9,7 @@ const path = require('path');
 
 async function installPackage(packages) {
   if (os.platform() === 'darwin') {
-    await exec.exec(`brew install -y ${packages.join(' ')}`);
+    await exec.exec(`brew install ${packages.join(' ')}`);
   } else {
     await exec.exec(`sudo apt-get install -y ${packages.join(' ')}`);
   }
