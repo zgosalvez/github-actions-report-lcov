@@ -18844,7 +18844,7 @@ const path = __webpack_require__(5622);
 
 async function installPackage(packages) {
   if (os.platform() === 'darwin') {
-    await exec.exec(`sudo brew install -y ${packages.join(' ')}`);
+    await exec.exec(`brew install -y ${packages.join(' ')}`);
   } else {
     await exec.exec(`sudo apt-get install -y ${packages.join(' ')}`);
   }
