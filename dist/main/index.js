@@ -18453,7 +18453,12 @@ const path = __webpack_require__(5622);
 
 async function run() {
   try {
-    await exec.exec('sudo apt-get install -y lcov');
+    try {
+      await exec.exec('sudo apt-get install -y lcov');
+    } catch (error) {
+      core.debug(`Failed to install lcov with sudo, trying without: ${error}`);
+      await exec.exec('apt-get install -y lcov');
+    }
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
