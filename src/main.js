@@ -25,7 +25,7 @@ async function run() {
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
-    const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
+    const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isFailure = totalCoverage < minimumCoverage;
 
     if (gitHubToken !== '' && events.includes(github.context.eventName)) {
