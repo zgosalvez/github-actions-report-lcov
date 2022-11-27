@@ -27,18 +27,22 @@ async function run() {
     const gitHubToken = core.getInput('github-token').trim();
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isFailure = totalCoverage < minimumCoverage;
+    let sha;
+    let prNumber;
 
-    let prNumber = core.getInput('pr-number');
-    let sha = github.context.payload.after
-    if (!prNumber && github.context.eventName === 'pull_request') {
-      prNumber = github.context.payload.pull_request.number
-      sha = github.context.payload.pull_request.head.sha
-    }
-    if (!sha) sha = github.context.sha
+    if (gitHubToken !== '') {
+      if (events.includes(github.context.eventName)) {
+        sha = github.context.payload.pull_request.head.sha;
+        prNumber = github.context.payload.pull_request.number;
+      } else {
+        sha = github.context.payload.after || github.context.sha;
+        prNumber = core.getInput('pr-number');
 
-    if (prNumber && gitHubToken !== '') {
+        if (!prNumber) {
+          throw Error('The `pr-number` input is required when the event is not a `pull_request` or `pull_request_target`.');
+        }
+      }
 
-    if (gitHubToken !== '' && events.includes(github.context.eventName)) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit, prNumber);
