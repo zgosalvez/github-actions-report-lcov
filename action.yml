@@ -20,7 +20,7 @@ inputs:
     description: 'A prefix before the title "LCOV of commit..." Optional. Default: ``'
     required: false
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/main/index.js'
   post: 'dist/post/index.js'
 branding:
