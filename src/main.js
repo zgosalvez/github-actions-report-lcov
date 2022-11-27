@@ -7,6 +7,8 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
+const events = ['pull_request', 'pull_request_target'];
+
 async function run() {
   try {
     await exec.exec('sudo apt-get install -y lcov');
@@ -25,7 +27,7 @@ async function run() {
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isFailure = totalCoverage < minimumCoverage;
 
-    if (gitHubToken !== '' && github.context.eventName === 'pull_request') {
+    if (gitHubToken !== '' && events.includes(github.context.eventName)) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit);

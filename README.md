@@ -49,6 +49,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         working-directory: apps/my-first-app
 ```
+*Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
 
 ### Flutter Workflows
 
