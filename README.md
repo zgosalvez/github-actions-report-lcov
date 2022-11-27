@@ -13,10 +13,11 @@ Create a workflow `.yml` file in your `.github/workflows` directory. An [example
 For more information on these inputs, see the [Workflow syntax for GitHub Actions](https://docs.github.com/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstepswith)
 
 - `coverage-files`: The coverage files to scan. For example, `coverage/lcov.*.info`
-- `artifact-name`: The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory
+- `artifact-name`: The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory. Optional. Default: `` (Skips uploading of artifacts)
 - `minimum-coverage`: The minimum coverage to pass the check. Optional. Default: `0` (always passes)
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
 - `working-directory`: The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`
+- `title`: A prefix before the title "LCOV of commit..." Optional. Default: ``
 - `pr-number`: The number of pull request you want to process. In case you are not using `pull_request` trigger type in the workflow. Optional.
 
 ### Outputs
@@ -50,6 +51,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         working-directory: apps/my-first-app
 ```
+*Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
 
 ### Flutter Workflows
 
