@@ -18,6 +18,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
 - `working-directory`: The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`
 - `title`: A prefix before the title "LCOV of commit..." Optional. Default: ``
+- `pr-number`: The number of the pull request you want to process. Required when the event is not `pull_request` or `pull_request_target`
 
 ### Outputs
 None.
@@ -50,7 +51,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         working-directory: apps/my-first-app
 ```
-*Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
+*Tip:* This should primarily be used with `pull_request` and `pull_request_target` events.
 
 ### Flutter Workflows
 

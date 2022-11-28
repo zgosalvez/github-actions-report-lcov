@@ -19,6 +19,9 @@ inputs:
   title-prefix:
     description: 'A prefix before the title "LCOV of commit..." Optional. Default: ``'
     required: false
+  pr-number:
+    descirption: 'The number of the pull request you want to process. Required when the event is not `pull_request` or `pull_request_target`'
+    required: false
 runs:
   using: 'node16'
   main: 'dist/main/index.js'

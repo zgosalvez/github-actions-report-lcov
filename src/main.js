@@ -27,14 +27,27 @@ async function run() {
     const gitHubToken = core.getInput('github-token').trim();
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isFailure = totalCoverage < minimumCoverage;
+    let sha;
+    let prNumber;
 
-    if (gitHubToken !== '' && events.includes(github.context.eventName)) {
+    if (gitHubToken !== '') {
+      if (events.includes(github.context.eventName)) {
+        sha = github.context.payload.pull_request.head.sha;
+        prNumber = github.context.payload.pull_request.number;
+      } else {
+        sha = github.context.payload.after || github.context.sha;
+        prNumber = core.getInput('pr-number');
+
+        if (!prNumber) {
+          throw Error('The `pr-number` input is required when the event is not a `pull_request` or `pull_request_target`.');
+        }
+      }
+
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
-      const sha = github.context.payload.pull_request.head.sha;
+      const details = await detail(coverageFile, octokit, prNumber);
       const shaShort = sha.substr(0, 7);
-      let body = `### ${title ? `${title} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>`;
+      let body = `### ${title ? `${title} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${prNumber}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>`;
 
       if (isFailure) {
         body += `\n:no_entry: ${errorMessage}`;
@@ -44,7 +57,7 @@ async function run() {
       await octokit.issues.createComment({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
-        issue_number: github.context.payload.pull_request.number,
+        issue_number: prNumber,
         body: body,
       });
     } else {
@@ -138,7 +151,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, octokit, prNumber) {
   let output = '';
 
   const options = {};
@@ -171,7 +184,7 @@ async function detail(coverageFile, octokit) {
     .pulls.listFiles.endpoint.merge({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
-      pull_number: github.context.payload.pull_request.number,
+      pull_number: prNumber,
     });
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
