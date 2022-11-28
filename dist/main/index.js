@@ -18827,8 +18827,6 @@ const events = ['pull_request', 'pull_request_target'];
 
 async function run() {
   try {
-    await exec.exec('sudo apt-get install -y lcov');
-
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
