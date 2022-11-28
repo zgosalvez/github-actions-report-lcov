@@ -41,8 +41,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     # ... Generate LCOV files or download it from a different job
+    - name: Setup LCOV
+      uses: hrishikesh-kadam/setup-lcov@v1
     - name: Report code coverage
-      uses: zgosalvez/github-actions-report-lcov@v1
+      uses: zgosalvez/github-actions-report-lcov@v3
       with:
         coverage-files: coverage/lcov.*.info
         minimum-coverage: 90
