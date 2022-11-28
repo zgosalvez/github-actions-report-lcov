@@ -42,7 +42,7 @@ jobs:
       uses: actions/checkout@v2
     # ... Generate LCOV files or download it from a different job
     - name: Report code coverage
-      uses: zgosalvez/github-actions-report-lcov@v1
+      uses: zgosalvez/github-actions-report-lcov@v2
       with:
         coverage-files: coverage/lcov.*.info
         minimum-coverage: 90
