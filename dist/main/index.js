@@ -18868,6 +18868,8 @@ async function run() {
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
     }
 
+    core.setOutput("total-coverage-percentage", totalCoverage);
+
     if (isFailure) {
       throw Error(errorMessage);
     }
