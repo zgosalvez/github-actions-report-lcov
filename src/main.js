@@ -17,7 +17,7 @@ async function run() {
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
-    const titlePrefix = core.getInput('titlePrefix');
+    const titlePrefix = core.getInput('title-prefix');
 
     await genhtml(coverageFiles, tmpPath);
 
