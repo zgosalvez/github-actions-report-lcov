@@ -19,6 +19,10 @@ inputs:
   title-prefix:
     description: 'A prefix before the title "LCOV of commit..." Optional. Default: ``'
     required: false
+outputs:
+  total-coverage:
+      description: 'The total coverage from scanned files.'
+
 runs:
   using: 'node16'
   main: 'dist/main/index.js'
