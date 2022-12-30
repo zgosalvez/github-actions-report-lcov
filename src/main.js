@@ -15,7 +15,7 @@ async function run() {
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
-    const title = core.getInput('title');
+    const titlePrefix = core.getInput('title-prefix');
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -32,7 +32,7 @@ async function run() {
       const details = await detail(coverageFile, octokit);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
-      let body = `### ${title ? `${title} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>`;
+      let body = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>`;
 
       if (isFailure) {
         body += `\n:no_entry: ${errorMessage}`;
@@ -49,6 +49,8 @@ async function run() {
       core.info("github-token received is empty. Skipping writing a comment in the PR.");
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
     }
+
+    core.setOutput("total-coverage", totalCoverage);
 
     if (isFailure) {
       throw Error(errorMessage);
