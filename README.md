@@ -20,7 +20,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `title-prefix`: A prefix before the title "LCOV of commit..." Optional. Default: ``
 
 ### Outputs
-- `total-coverage-percentage`: The total code coverage percentage from scanned files
+- `total-coverage`: The total coverage from scanned files.
 
 Sample comment:
 ![Screenshot](assets/comment.png)

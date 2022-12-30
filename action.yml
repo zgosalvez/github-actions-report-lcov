@@ -20,8 +20,8 @@ inputs:
     description: 'A prefix before the title "LCOV of commit..." Optional. Default: ``'
     required: false
 outputs:
-  total-coverage-percentage:
-      description: 'The total code coverage percentage from scanned files'
+  total-coverage:
+      description: 'The total coverage from scanned files.'
 
 runs:
   using: 'node16'
