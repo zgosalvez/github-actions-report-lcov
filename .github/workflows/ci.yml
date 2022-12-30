@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security_hardening:
+    name: Check security hardening
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone the repository
+      uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+    - name: Ensure SHA pinned actions
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@af2eb3226618e2494e3d9084f515ad6dcf16e229
+
+  build_test:
+    name: Build & Test
+    needs: security_hardening
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone the repository
+      uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      with:
+        ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
+    - name: Get runs.using version
+      id: get-runs-using-version
+      uses: zgosalvez/github-actions-get-action-runs-using-version@a15b651c3198e1547715f3428b328e7ef89ab8d8
+    - name: Set up Node
+      uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+      with:
+        node-version: v${{ steps.get-runs-using-version.outputs.version }}
+    - name: Cache Node Packages
+      id: node-cache
+      uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d
+      with:
+        path: ~/.npm
+        key: node-cache-${{ steps.get-runs-using-version.outputs.prop }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          node-cache-${{ steps.get-runs-using-version.outputs.prop }}-
+          node-cache-
+    - name: Get Node packages
+      run: npm ci
+    - name: Run linter tool
+      run: npm run lint
+    - name: Prepare
+      run: npm run prepare
+    - uses: stefanzweifel/git-auto-commit-action@3ea6ae190baf489ba007f7c92608f33ce20ef04a
+      with:
+        commit_message: Apply `npm run prepare` changes
