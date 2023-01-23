@@ -17,7 +17,10 @@ inputs:
   working-directory:
     description: 'The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`'
   title-prefix:
-    description: 'A prefix before the title "LCOV of commit..." Optional. Default: ``'
+    description: 'A prefix before the title "LCOV of commit...". Optional. Default: ``'
+    required: false
+  additional-message:
+    description: 'Custom text appended to the code coverage comment in the pull request. Optional. Default: ``'
     required: false
   update-comment:
     description: 'Update the existing comment if it exists instead of creating a new one'
