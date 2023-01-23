@@ -20679,7 +20679,7 @@ async function run() {
 async function createNewComment(body, octokit) {
   core.debug("Creating a comment in the PR.")
 
-  await octokit.issues.createComment({
+  await octokit.rest.issues.createComment({
     repo: github.context.repo.repo,
     owner: github.context.repo.owner,
     issue_number: github.context.payload.pull_request.number,
@@ -20688,7 +20688,7 @@ async function createNewComment(body, octokit) {
 }
 
 async function upsertComment(body, commentHeaderPrefix, octokit) {
-  const issueComments = await octokit.issues.listComments({
+  const issueComments = await octokit.rest.issues.listComments({
     repo: github.context.repo.repo,
     owner: github.context.repo.owner,
     issue_number: github.context.payload.pull_request.number,
@@ -20701,16 +20701,16 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   if (existingComment) {
     core.debug(`Updating comment, id: ${existingComment.id}.`);
 
-    await octokit.issues.updateComment({
+    await octokit.rest.issues.updateComment({
       repo: github.context.repo.repo,
       owner: github.context.repo.owner,
       comment_id: existingComment.id,
       body,
     });
   } else {
-    core.debug(`Commend does not exist, new comment will be created.`);
+    core.debug(`Comment does not exist, new comment will be created.`);
 
-    await createNewComment();
+    await createNewComment(body, octokit);
   }
 }
 
@@ -20822,7 +20822,7 @@ async function detail(coverageFile, octokit) {
   lines.pop(); // Removes "========"
 
   const listFilesOptions = octokit
-    .pulls.listFiles.endpoint.merge({
+    .rest.pulls.listFiles.endpoint.merge({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       pull_number: github.context.payload.pull_request.number,
