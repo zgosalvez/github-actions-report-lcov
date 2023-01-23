@@ -25,7 +25,7 @@
     "@actions/glob": "^0.3.0",
     "@actions/io": "^1.1.2",
     "install": "^0.13.0",
-    "lcov-total": "^2.1.0",
+    "lcov-total": "^1.0.7",
     "npm": "^9.2.0"
   },
   "devDependencies": {

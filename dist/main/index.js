@@ -13020,6 +13020,293 @@ exports.isPlainObject = isPlainObject;
 
 /***/ }),
 
+/***/ 3991:
+/***/ ((__unused_webpack_module, exports) => {
+
+exports.FileResult = class FileResult {
+  constructor(fileName, linesResult) {
+    this._name = fileName;
+    this._result = linesResult;
+  }
+
+  get fileName() {
+    return this._name;
+  }
+
+  get executed() {
+    return this._result.hit;
+  }
+
+  get total() {
+    return this._result.found;
+  }
+
+  get coverage() {
+    let coverage = (this.executed / this.total) * 100;
+    return parseFloat(coverage.toFixed(2));
+  }
+};
+
+exports.CoverageResult = class CoverageResult {
+  /**
+   * @param {FileResult[]} fileResults
+   */
+  constructor(fileResults = []) {
+    this._fileResults = fileResults;
+  }
+
+  get files() {
+    return this._fileResults;
+  }
+
+  get coverage() {
+    let total = 0;
+    let executed = 0;
+    this.files.forEach((fileResult) => {
+      total += fileResult.total;
+      executed += fileResult.executed;
+    });
+    let coverage = (executed / total) * 100;
+    return parseFloat(coverage.toFixed(2));
+  }
+};
+
+
+/***/ }),
+
+/***/ 9672:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { FileResult, CoverageResult } = __nccwpck_require__(3991);
+const parser = __nccwpck_require__(829);
+
+module.exports = function total(filename) {
+  const results = parser(filename);
+
+  if (!results) {
+    throw new Error("content is empty");
+  }
+
+  /** @type FileResult[] */
+  const fileResults = results.map((result) => {
+    return new FileResult(result.file, result.lines);
+  });
+  const coverageResult = new CoverageResult(fileResults);
+  return coverageResult.coverage;
+};
+
+
+/***/ }),
+
+/***/ 829:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const fs = __nccwpck_require__(7147);
+
+module.exports = function parse(filename) {
+  const file = fs.readFileSync(filename, "utf-8");
+  return module.exports.format(file);
+};
+
+module.exports.format = function (file) {
+  const dataset = ["end_of_record"].concat(file.split("\n"));
+
+  const data = dataset.map(function (current) {
+    const item = {
+      lines: {
+        found: 0,
+        hit: 0,
+        details: [],
+      },
+      functions: {
+        hit: 0,
+        found: 0,
+        details: [],
+      },
+      branches: {
+        hit: 0,
+        found: 0,
+        details: [],
+      },
+    };
+    const line = current.trim();
+    const allparts = line.split(":");
+    const parts = [allparts.shift(), allparts.join(":")];
+
+    let lines;
+    let fn;
+
+    switch (parts[0].toUpperCase()) {
+      case "TN":
+        item.title = parts[1].trim();
+        break;
+      case "SF":
+        item.file = parts.slice(1).join(":").trim();
+        break;
+      case "FNF":
+        item.functions.found = Number(parts[1].trim());
+        break;
+      case "FNH":
+        item.functions.hit = Number(parts[1].trim());
+        break;
+      case "LF":
+        item.lines.found = Number(parts[1].trim());
+        break;
+      case "LH":
+        item.lines.hit = Number(parts[1].trim());
+        break;
+      case "DA":
+        lines = parts[1].split(",");
+        item.lines.details.push({
+          line: Number(lines[0]),
+          hit: Number(lines[1]),
+        });
+        break;
+      case "FN":
+        fn = parts[1].split(",");
+        item.functions.details.push({
+          name: fn[1],
+          line: Number(fn[0]),
+        });
+        break;
+      case "FNDA":
+        fn = parts[1].split(",");
+        item.functions.details.some(function (i, k) {
+          if (i.name === fn[1] && i.hit === undefined) {
+            item.functions.details[k].hit = Number(fn[0]);
+            return true;
+          }
+        });
+        break;
+      case "BRDA":
+        fn = parts[1].split(",");
+        item.branches.details.push({
+          line: Number(fn[0]),
+          block: Number(fn[1]),
+          branch: Number(fn[2]),
+          taken: fn[3] === "-" ? 0 : Number(fn[3]),
+        });
+        break;
+      case "BRF":
+        item.branches.found = Number(parts[1]);
+        break;
+      case "BRH":
+        item.branches.hit = Number(parts[1]);
+        break;
+    }
+
+    return item;
+  });
+
+  data.shift();
+
+  if (!data.length) {
+    throw new Error("FAILED_TO_PARSE_STRING");
+  }
+  return data;
+};
+
+module.exports.for_mat = function (file) {
+  const dataset = ["end_of_record"].concat(file.split("\n"));
+  let data = [];
+  for (let index = 0; index < dataset.length; index++) {
+    const item = {
+      lines: {
+        found: 0,
+        hit: 0,
+        details: [],
+      },
+      functions: {
+        hit: 0,
+        found: 0,
+        details: [],
+      },
+      branches: {
+        hit: 0,
+        found: 0,
+        details: [],
+      },
+    };
+    const line = dataset[index].trim();
+    const allparts = line.split(":");
+    const parts = [allparts.shift(), allparts.join(":")];
+
+    let lines;
+    let fn;
+
+    switch (parts[0].toUpperCase()) {
+      case "TN":
+        item.title = parts[1].trim();
+        break;
+      case "SF":
+        item.file = parts.slice(1).join(":").trim();
+        break;
+      case "FNF":
+        item.functions.found = Number(parts[1].trim());
+        break;
+      case "FNH":
+        item.functions.hit = Number(parts[1].trim());
+        break;
+      case "LF":
+        item.lines.found = Number(parts[1].trim());
+        break;
+      case "LH":
+        item.lines.hit = Number(parts[1].trim());
+        break;
+      case "DA":
+        lines = parts[1].split(",");
+        item.lines.details.push({
+          line: Number(lines[0]),
+          hit: Number(lines[1]),
+        });
+        break;
+      case "FN":
+        fn = parts[1].split(",");
+        item.functions.details.push({
+          name: fn[1],
+          line: Number(fn[0]),
+        });
+        break;
+      case "FNDA":
+        fn = parts[1].split(",");
+        item.functions.details.some(function (i, k) {
+          if (i.name === fn[1] && i.hit === undefined) {
+            item.functions.details[k].hit = Number(fn[0]);
+            return true;
+          }
+        });
+        break;
+      case "BRDA":
+        fn = parts[1].split(",");
+        item.branches.details.push({
+          line: Number(fn[0]),
+          block: Number(fn[1]),
+          branch: Number(fn[2]),
+          taken: fn[3] === "-" ? 0 : Number(fn[3]),
+        });
+        break;
+      case "BRF":
+        item.branches.found = Number(parts[1]);
+        break;
+      case "BRH":
+        item.branches.hit = Number(parts[1]);
+        break;
+    }
+
+    return item;
+  }
+
+  data.shift();
+
+  if (!data.length) {
+    throw new Error("FAILED_TO_PARSE_STRING");
+  }
+  return data;
+};
+
+
+/***/ }),
+
 /***/ 3973:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -20130,14 +20417,6 @@ module.exports = eval("require")("encoding");
 
 /***/ }),
 
-/***/ 2388:
-/***/ ((module) => {
-
-module.exports = eval("require")("lcov-total");
-
-
-/***/ }),
-
 /***/ 9491:
 /***/ ((module) => {
 
@@ -20344,7 +20623,7 @@ const core = __nccwpck_require__(2186);
 const exec = __nccwpck_require__(1514);
 const github = __nccwpck_require__(5438);
 const glob = __nccwpck_require__(8090);
-const lcovTotal = __nccwpck_require__(2388);
+const lcovTotal = __nccwpck_require__(9672);
 const os = __nccwpck_require__(2037);
 const path = __nccwpck_require__(1017);
 
