@@ -17,7 +17,7 @@ async function run() {
     const coverageFiles = await globber.glob();
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
-    const updateComment = core.getInput('update-comment');
+    const updateComment = core.getInput('update-comment') === 'true';
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -35,13 +35,13 @@ async function run() {
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>\n${additionalMessage}`;
+      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
-      updateComment === "true" ? await upsertComment(body, commentHeaderPrefix, octokit) : await createNewComment(body, octokit);
+      updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
     } else {
       core.info("github-token received is empty. Skipping writing a comment in the PR.");
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
@@ -57,7 +57,7 @@ async function run() {
   }
 }
 
-async function createNewComment(body, octokit) {
+async function createComment(body, octokit) {
   core.debug("Creating a comment in the PR.")
 
   await octokit.rest.issues.createComment({
@@ -89,9 +89,9 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
       body,
     });
   } else {
-    core.debug(`Comment does not exist, new comment will be created.`);
+    core.debug(`Comment does not exist, a new comment will be created.`);
 
-    await createNewComment(body, octokit);
+    await createComment(body, octokit);
   }
 }
 

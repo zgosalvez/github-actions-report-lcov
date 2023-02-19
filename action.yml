@@ -23,7 +23,7 @@ inputs:
     description: 'Custom text appended to the code coverage comment in the pull request. Optional. Default: ``'
     required: false
   update-comment:
-    description: 'Update the existing comment if it exists instead of creating a new one'
+    description: 'Set to `true` to update the previous code coverage comment if such exists. When set to `false`, a new comment is always created. Optional. Default: `false`'
     required: false
     default: "false"
 outputs:
