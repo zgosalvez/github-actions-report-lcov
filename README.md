@@ -17,7 +17,9 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `minimum-coverage`: The minimum coverage to pass the check. Optional. Default: `0` (always passes)
 - `github-token`: Set the `${{ secrets.GITHUB_TOKEN }}` token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``
 - `working-directory`: The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`
-- `title-prefix`: A prefix before the title "LCOV of commit..." Optional. Default: ``
+- `title-prefix`: A prefix before the title "LCOV of commit...". Optional. Default: ``
+- `additional-message`: Custom text appended to the code coverage comment in the pull request. Optional. Default: ``
+- `update-comment`: Set to `true` to update the previous code coverage comment if such exists. When set to `false`, a new comment is always created. Optional. Default: `false`
 
 ### Outputs
 - `total-coverage`: The total coverage from scanned files.
@@ -51,6 +53,7 @@ jobs:
         artifact-name: code-coverage-report
         github-token: ${{ secrets.GITHUB_TOKEN }}
         working-directory: apps/my-first-app
+        update-comment: true
 ```
 *Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
 
@@ -59,4 +62,4 @@ jobs:
 This is used in my opinionated [GitHub Actions: Flutter Workflows](https://github.com/zgosalvez/github-actions-flutter-workflows) repository along with other actions for a complete end-to-end DevOps experience.
 
 ## License
-The scripts and documentation in this project are released under the [MIT License](LICENSE)
+The scripts and documentation in this project are released under the [MIT License](LICENSE.md)

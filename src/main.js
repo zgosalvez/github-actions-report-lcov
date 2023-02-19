@@ -16,6 +16,8 @@ async function run() {
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
     const titlePrefix = core.getInput('title-prefix');
+    const additionalMessage = core.getInput('additional-message');
+    const updateComment = core.getInput('update-comment') === 'true';
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -24,7 +26,7 @@ async function run() {
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
-    const isFailure = totalCoverage < minimumCoverage;
+    const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
     if (gitHubToken !== '' && events.includes(github.context.eventName)) {
       const octokit = await github.getOctokit(gitHubToken);
@@ -32,19 +34,14 @@ async function run() {
       const details = await detail(coverageFile, octokit);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
-      let body = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>`;
+      const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
+      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
-      if (isFailure) {
+      if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
-      core.debug("Creating a comment in the PR.")
-      await octokit.issues.createComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: github.context.payload.pull_request.number,
-        body: body,
-      });
+      updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
     } else {
       core.info("github-token received is empty. Skipping writing a comment in the PR.");
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
@@ -52,11 +49,49 @@ async function run() {
 
     core.setOutput("total-coverage", totalCoverage);
 
-    if (isFailure) {
+    if (!isMinimumCoverageReached) {
       throw Error(errorMessage);
     }
   } catch (error) {
     core.setFailed(error.message);
+  }
+}
+
+async function createComment(body, octokit) {
+  core.debug("Creating a comment in the PR.")
+
+  await octokit.rest.issues.createComment({
+    repo: github.context.repo.repo,
+    owner: github.context.repo.owner,
+    issue_number: github.context.payload.pull_request.number,
+    body,
+  });
+}
+
+async function upsertComment(body, commentHeaderPrefix, octokit) {
+  const issueComments = await octokit.rest.issues.listComments({
+    repo: github.context.repo.repo,
+    owner: github.context.repo.owner,
+    issue_number: github.context.payload.pull_request.number,
+  });
+
+  const existingComment = issueComments.data.find(comment =>
+    comment.body.includes(commentHeaderPrefix),
+  );
+
+  if (existingComment) {
+    core.debug(`Updating comment, id: ${existingComment.id}.`);
+
+    await octokit.rest.issues.updateComment({
+      repo: github.context.repo.repo,
+      owner: github.context.repo.owner,
+      comment_id: existingComment.id,
+      body,
+    });
+  } else {
+    core.debug(`Comment does not exist, a new comment will be created.`);
+
+    await createComment(body, octokit);
   }
 }
 
@@ -168,7 +203,7 @@ async function detail(coverageFile, octokit) {
   lines.pop(); // Removes "========"
 
   const listFilesOptions = octokit
-    .pulls.listFiles.endpoint.merge({
+    .rest.pulls.listFiles.endpoint.merge({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       pull_number: github.context.payload.pull_request.number,
