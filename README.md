@@ -61,5 +61,8 @@ jobs:
 
 This is used in my opinionated [GitHub Actions: Flutter Workflows](https://github.com/zgosalvez/github-actions-flutter-workflows) repository along with other actions for a complete end-to-end DevOps experience.
 
+## Contributing
+See [the contributing guide](.github/CONTRIBUTING.md) for detailed instructions on how to get started with our project.
+
 ## License
 The scripts and documentation in this project are released under the [MIT License](LICENSE.md)
