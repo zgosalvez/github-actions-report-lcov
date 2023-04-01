@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clone the repository
-      uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f
+      uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
     - name: Ensure SHA pinned actions
       uses: zgosalvez/github-actions-ensure-sha-pinned-actions@21991cec25093947ff3f62e4c223df0260c39944
 
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clone the repository
-      uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f
+      uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
       with:
         ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
     - name: Get runs.using version
