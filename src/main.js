@@ -123,10 +123,14 @@ async function upsertComment(body, commentHeader, octokit) {
 async function genhtml(artifactName, coverageFiles, tmpPath) {
   const { workingDirectory } = readAndSetInputs();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
-  args.push('--output-directory');
-  args.push(artifactPath);
+  const args = [
+    ...coverageFiles,
+    '--rc',
+    'lcov_branch_coverage=1',
+    '--output-directory',
+    artifactPath
+  ];
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
