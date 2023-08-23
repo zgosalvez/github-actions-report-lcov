@@ -19,7 +19,9 @@
   },
   "keywords": [
     "actions",
-    "node"
+    "node",
+    "lcov",
+    "coverage"
   ],
   "author": "Zennon Gosalvez",
   "license": "MIT",
