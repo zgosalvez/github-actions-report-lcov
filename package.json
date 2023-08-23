@@ -4,6 +4,7 @@
   "description": "Report the code coverage from LCOV files",
   "main": "dist/main/index.js",
   "scripts": {
+    "install:git:hooks": "cp git-hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit",
     "lint": "eslint .",
     "build:post": "ncc build src/post.js -o dist/post --source-map --license licenses.txt",
     "build:main": "ncc build src/main.js -o dist/main --source-map --license licenses.txt",
