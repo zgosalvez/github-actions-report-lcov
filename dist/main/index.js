@@ -19248,8 +19248,11 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
+    const artifactName = core.getInput('artifact-name');
 
-    await genhtml(coverageFiles, tmpPath);
+    if (artifactName) {
+      await genhtml(artifactName, coverageFiles, tmpPath);
+    }
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
@@ -19325,9 +19328,8 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   }
 }
 
-async function genhtml(coverageFiles, tmpPath) {
+async function genhtml(artifactName, coverageFiles, tmpPath) {
   const workingDirectory = core.getInput('working-directory').trim() || './';
-  const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
@@ -19335,24 +19337,18 @@ async function genhtml(coverageFiles, tmpPath) {
   args.push(artifactPath);
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
+  
+  const globber = await glob.create(`${artifactPath}/**`);
+  const htmlFiles = await globber.glob();  
 
-  if (artifactName !== '') {
-    const globber = await glob.create(`${artifactPath}/**`);
-    const htmlFiles = await globber.glob();
-
-    core.info(`Uploading artifacts.`);
-
-    await artifact
-      .create()
-      .uploadArtifact(
-        artifactName,
-        htmlFiles,
-        artifactPath,
-        { continueOnError: false },
-      );
-  } else {
-    core.info("Skip uploading artifacts");
-  }
+  await artifact
+    .create()
+    .uploadArtifact(
+      artifactName,
+      htmlFiles,
+      artifactPath,
+      { continueOnError: false },
+    );  
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
