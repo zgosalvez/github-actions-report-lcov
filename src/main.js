@@ -7,7 +7,7 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
-const events = ['pull_request', 'pull_request_target'];
+const allowedGitHubEvents = ['pull_request', 'pull_request_target'];
 
 function readAndSetInputs() {
   return {
@@ -55,7 +55,7 @@ async function run() {
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
-    if (gitHubToken !== '' && events.includes(github.context.eventName)) {
+    if (gitHubToken !== '' && allowedGitHubEvents.includes(github.context.eventName)) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(mergedCoverageFile);
       const details = await detail(mergedCoverageFile, octokit);
