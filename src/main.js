@@ -22,6 +22,14 @@ function readAndSetInputs() {
   };
 }
 
+function sha() {
+  const full = github.context.payload.pull_request.head.sha;
+  return {
+    full,
+    short: sha.substr(0, 7),
+  };
+}
+
 async function run() {
   const { 
     coverageFilesPattern,
@@ -51,10 +59,8 @@ async function run() {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(mergedCoverageFile);
       const details = await detail(mergedCoverageFile, octokit);
-      const sha = github.context.payload.pull_request.head.sha;
-      const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
+      let body = `${commentHeaderPrefix} [<code>${sha().short}</code>](${github.context.payload.pull_request.number}/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
