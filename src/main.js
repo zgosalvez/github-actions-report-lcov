@@ -245,11 +245,8 @@ async function detail(coverageFile, octokit) {
     return false;
   });
 
-  if (lines.length === 3) { // Only the header remains
-    return ' n/a';
-  }
-
-  return '\n  ' + lines.join('\n  ');
+  const onlyHeaderRemains = () => lines.length === 3;
+  return onlyHeaderRemains() ? ' n/a' : `\n  ${lines.join('\n  ')}`;
 }
 
 run();
