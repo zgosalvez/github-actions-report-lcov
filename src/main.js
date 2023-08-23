@@ -3,7 +3,7 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
 const glob = require('@actions/glob');
-const lcovTotal = require("lcov-total");
+const lcovTotal = require('lcov-total');
 const os = require('os');
 const path = require('path');
 
@@ -38,7 +38,7 @@ async function run() {
     updateComment,
     artifactName,
     minimumCoverage,
-    gitHubToken
+    gitHubToken,
   } = readAndSetInputs();
 
   try {
@@ -59,8 +59,16 @@ async function run() {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(mergedCoverageFile);
       const details = await detail(mergedCoverageFile, octokit);
-      const commentHeader = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeader} [<code>${sha().short}</code>](${github.context.payload.pull_request.number}/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
+      const commentHeader = `### ${
+        titlePrefix ? `${titlePrefix} ` : ''
+      }[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
+      let body = `${commentHeader} [<code>${sha().short}</code>](${
+        github.context.payload.pull_request.number
+      }/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${
+        github.context.runId
+      })\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${
+        additionalMessage ? `\n${additionalMessage}` : ''
+      }`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
@@ -68,11 +76,13 @@ async function run() {
 
       updateComment ? await upsertComment(body, commentHeader, octokit) : await createComment(body, octokit);
     } else {
-      core.info("github-token received is empty. Skipping writing a comment in the PR.");
-      core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
+      core.info('github-token received is empty. Skipping writing a comment in the PR.');
+      core.info(
+        'Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.',
+      );
     }
 
-    core.setOutput("total-coverage", totalCoverage);
+    core.setOutput('total-coverage', totalCoverage);
 
     if (!isMinimumCoverageReached) {
       throw Error(errorMessage);
@@ -83,7 +93,7 @@ async function run() {
 }
 
 async function createComment(body, octokit) {
-  core.debug("Creating a comment in the PR.")
+  core.debug('Creating a comment in the PR.');
 
   await octokit.rest.issues.createComment({
     repo: github.context.repo.repo,
@@ -100,9 +110,7 @@ async function upsertComment(body, commentHeader, octokit) {
     issue_number: github.context.payload.pull_request.number,
   });
 
-  const existingComment = issueComments.data.find(comment =>
-    comment.body.includes(commentHeader),
-  );
+  const existingComment = issueComments.data.find((comment) => comment.body.includes(commentHeader));
 
   if (existingComment) {
     core.debug(`Updating comment, id: ${existingComment.id}.`);
@@ -114,7 +122,7 @@ async function upsertComment(body, commentHeader, octokit) {
       body,
     });
   } else {
-    core.debug(`Comment does not exist, a new comment will be created.`);
+    core.debug('Comment does not exist, a new comment will be created.');
 
     await createComment(body, octokit);
   }
@@ -124,33 +132,20 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
   const { workingDirectory } = readAndSetInputs();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
 
-  const args = [
-    ...coverageFiles,
-    '--rc',
-    'lcov_branch_coverage=1',
-    '--output-directory',
-    artifactPath
-  ];
+  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1', '--output-directory', artifactPath];
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
   const globber = await glob.create(`${artifactPath}/**`);
   const htmlFiles = await globber.glob();
 
-  artifact
-    .create()
-    .uploadArtifact(
-      artifactName,
-      htmlFiles,
-      artifactPath,
-      { continueOnError: false },
-    );
+  artifact.create().uploadArtifact(artifactName, htmlFiles, artifactPath, { continueOnError: false });
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
   // This is broken for some reason:
   //const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
-  const mergedCoverageFile = tmpPath + '/lcov.info';
+  const mergedCoverageFile = `${tmpPath}/lcov.info`;
   const args = [];
 
   for (const coverageFile of coverageFiles) {
@@ -176,19 +171,12 @@ async function summarize(mergedCoverageFile) {
     },
     stderr: (data) => {
       output += data.toString();
-    }
+    },
   };
 
-  await exec.exec('lcov', [
-    '--summary',
-    mergedCoverageFile,
-    '--rc',
-    'lcov_branch_coverage=1'
-  ], options);
+  await exec.exec('lcov', ['--summary', mergedCoverageFile, '--rc', 'lcov_branch_coverage=1'], options);
 
-  const lines = output
-    .trim()
-    .split(/\r?\n/)
+  const lines = output.trim().split(/\r?\n/);
 
   lines.shift(); // Removes "Reading tracefile..."
 
@@ -205,33 +193,24 @@ async function detail(coverageFile, octokit) {
     },
     stderr: (data) => {
       output += data.toString();
-    }
+    },
   };
 
-  await exec.exec('lcov', [
-    '--list',
-    coverageFile,
-    '--list-full-path',
-    '--rc',
-    'lcov_branch_coverage=1',
-  ], options);
+  await exec.exec('lcov', ['--list', coverageFile, '--list-full-path', '--rc', 'lcov_branch_coverage=1'], options);
 
-  let lines = output
-    .trim()
-    .split(/\r?\n/)
+  let lines = output.trim().split(/\r?\n/);
 
   lines.shift(); // Removes "Reading tracefile..."
   lines.pop(); // Removes "Total..."
   lines.pop(); // Removes "========"
 
-  const listFilesOptions = octokit
-    .rest.pulls.listFiles.endpoint.merge({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      pull_number: github.context.payload.pull_request.number,
-    });
+  const listFilesOptions = octokit.rest.pulls.listFiles.endpoint.merge({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    pull_number: github.context.payload.pull_request.number,
+  });
   const listFilesResponse = await octokit.paginate(listFilesOptions);
-  const changedFiles = listFilesResponse.map(file => file.filename);
+  const changedFiles = listFilesResponse.map((file) => file.filename);
 
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header

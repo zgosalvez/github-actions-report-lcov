@@ -5,10 +5,13 @@
   "main": "dist/main/index.js",
   "scripts": {
     "install:git:hooks": "cp git-hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit",
-    "lint": "eslint .",
+    "lint": "rome check src/*.js --apply",
+    "lint:check": "rome check src/*.js",
+    "format": "rome format src/*.js --write",
+    "format:check": "rome format src/*.js",
     "build:post": "ncc build src/post.js -o dist/post --source-map --license licenses.txt",
     "build:main": "ncc build src/main.js -o dist/main --source-map --license licenses.txt",
-    "prepare": "npm run lint && npm run build:post && npm run build:main"
+    "prepare": "npm run format && npm run lint && npm run build:post && npm run build:main"
   },
   "repository": {
     "type": "git",
@@ -33,6 +36,6 @@
   },
   "devDependencies": {
     "@vercel/ncc": "^0.36.1",
-    "eslint": "^8.44.0"
+    "rome": "12.1.3"
   }
 }
