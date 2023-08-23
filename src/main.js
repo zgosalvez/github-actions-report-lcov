@@ -10,15 +10,18 @@ const path = require('path');
 const events = ['pull_request', 'pull_request_target'];
 
 async function run() {
+  const coverageFilesPattern = core.getInput('coverage-files');
+  const titlePrefix = core.getInput('title-prefix');
+  const additionalMessage = core.getInput('additional-message');
+  const updateComment = core.getInput('update-comment') === 'true';
+  const artifactName = core.getInput('artifact-name');
+  const minimumCoverage = core.getInput('minimum-coverage');
+  const gitHubToken = core.getInput('github-token');
+  
   try {
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
-    const titlePrefix = core.getInput('title-prefix');
-    const additionalMessage = core.getInput('additional-message');
-    const updateComment = core.getInput('update-comment') === 'true';
-    const artifactName = core.getInput('artifact-name');
 
     if (artifactName) {
       await genhtml(artifactName, coverageFiles, tmpPath);
@@ -26,8 +29,6 @@ async function run() {
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
-    const minimumCoverage = core.getInput('minimum-coverage');
-    const gitHubToken = core.getInput('github-token');
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
