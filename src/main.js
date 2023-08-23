@@ -182,13 +182,14 @@ async function mergeCoverages(coverageFiles, tmpPath) {
 async function summarize(mergedCoverageFile) {
   let output = '';
 
-  const options = {};
-  options.listeners = {
-    stdout: (data) => {
-      output += data.toString();
-    },
-    stderr: (data) => {
-      output += data.toString();
+  const options = {
+    listeners: {
+      stdout: (data) => {
+        output += data.toString();
+      },
+      stderr: (data) => {
+        output += data.toString();
+      },
     },
   };
 
@@ -204,13 +205,14 @@ async function summarize(mergedCoverageFile) {
 async function detail(coverageFile, octokit) {
   let output = '';
 
-  const options = {};
-  options.listeners = {
-    stdout: (data) => {
-      output += data.toString();
-    },
-    stderr: (data) => {
-      output += data.toString();
+  const options = {
+    listeners: {
+      stdout: (data) => {
+        output += data.toString();
+      },
+      stderr: (data) => {
+        output += data.toString();
+      },
     },
   };
 
