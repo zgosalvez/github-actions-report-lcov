@@ -19237,8 +19237,6 @@ const lcovTotal = __nccwpck_require__(9672);
 const os = __nccwpck_require__(2037);
 const path = __nccwpck_require__(1017);
 
-const allowedGitHubEvents = ['pull_request', 'pull_request_target'];
-
 function readAndSetInputs() {
   return {
     coverageFilesPattern: core.getInput('coverage-files'),
@@ -19246,7 +19244,7 @@ function readAndSetInputs() {
     additionalMessage: core.getInput('additional-message'),
     updateComment: core.getInput('update-comment') === 'true',
     artifactName: core.getInput('artifact-name'),
-    minimumCoverage: core.getInput('minimum-coverage'),
+    minimumCoverage: Number(core.getInput('minimum-coverage')),
     gitHubToken: core.getInput('github-token'),
     workingDirectory: core.getInput('working-directory') || './',
   };
@@ -19284,6 +19282,11 @@ function buildMessageBody(params) {
   return body;
 }
 
+function runningInPullRequest() {
+  const allowedGitHubEvents = ['pull_request', 'pull_request_target'];
+  return allowedGitHubEvents.includes(github.context.eventName);
+}
+
 async function run() {
   const {
     coverageFilesPattern,
@@ -19309,15 +19312,12 @@ async function run() {
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
-    if (gitHubToken && allowedGitHubEvents.includes(github.context.eventName)) {
+    if (gitHubToken && runningInPullRequest()) {
       const octokit = await github.getOctokit(gitHubToken);
-      const summary = await summarize(mergedCoverageFile);
-      const details = await detail(mergedCoverageFile, octokit);
-
       const body = buildMessageBody({
         header: buildHeader(titlePrefix),
-        summary,
-        details,
+        summary: await summarize(mergedCoverageFile),
+        details: await detail(mergedCoverageFile, octokit),
         additionalMessage,
         isMinimumCoverageReached,
         errorMessage,
@@ -19332,9 +19332,8 @@ async function run() {
     }
 
     core.setOutput('total-coverage', totalCoverage);
-
     if (!isMinimumCoverageReached) {
-      throw Error(errorMessage);
+      core.setFailed(errorMessage);
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -19392,9 +19391,7 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
-  // This is broken for some reason:
-  //const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
-  const mergedCoverageFile = `${tmpPath}/lcov.info`;
+  const mergedCoverageFile = `${tmpPath}/merged-lcov.info`;
   const args = [];
 
   for (const coverageFile of coverageFiles) {
@@ -19462,12 +19459,17 @@ async function detail(coverageFile, octokit) {
   const changedFiles = listFilesResponse.map((file) => file.filename);
 
   lines = lines.filter((line, index) => {
-    if (index <= 2) return true; // Include header
+    const includeHeader = () => index <= 2;
+    if (includeHeader()) {
+      return true;
+    }
 
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
 
-      if (line.startsWith(changedFile)) return true;
+      if (line.startsWith(changedFile)) {
+        return true;
+      }
     }
 
     return false;
