@@ -99,9 +99,8 @@ async function run() {
     }
 
     core.setOutput('total-coverage', totalCoverage);
-
     if (!isMinimumCoverageReached) {
-      throw Error(errorMessage);
+      core.setFailed(errorMessage);
     }
   } catch (error) {
     core.setFailed(error.message);
