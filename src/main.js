@@ -9,15 +9,30 @@ const path = require('path');
 
 const events = ['pull_request', 'pull_request_target'];
 
+function readAndSetInputs() {
+  return {
+    coverageFilesPattern: core.getInput('coverage-files'),
+    titlePrefix: core.getInput('title-prefix'),
+    additionalMessage: core.getInput('additional-message'),
+    updateComment: core.getInput('update-comment') === 'true',
+    artifactName: core.getInput('artifact-name'),
+    minimumCoverage: core.getInput('minimum-coverage'),
+    gitHubToken: core.getInput('github-token'),
+    workingDirectory: core.getInput('working-directory') || './',
+  };
+}
+
 async function run() {
-  const coverageFilesPattern = core.getInput('coverage-files');
-  const titlePrefix = core.getInput('title-prefix');
-  const additionalMessage = core.getInput('additional-message');
-  const updateComment = core.getInput('update-comment') === 'true';
-  const artifactName = core.getInput('artifact-name');
-  const minimumCoverage = core.getInput('minimum-coverage');
-  const gitHubToken = core.getInput('github-token');
-  
+  const { 
+    coverageFilesPattern,
+    titlePrefix,
+    additionalMessage,
+    updateComment,
+    artifactName,
+    minimumCoverage,
+    gitHubToken
+  } = readAndSetInputs();  
+
   try {
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const globber = await glob.create(coverageFilesPattern);
@@ -100,7 +115,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
 }
 
 async function genhtml(artifactName, coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory') || './';
+  const { workingDirectory } = readAndSetInputs();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
