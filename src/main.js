@@ -59,14 +59,14 @@ async function run() {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(mergedCoverageFile);
       const details = await detail(mergedCoverageFile, octokit);
-      const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeaderPrefix} [<code>${sha().short}</code>](${github.context.payload.pull_request.number}/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
+      const commentHeader = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
+      let body = `${commentHeader} [<code>${sha().short}</code>](${github.context.payload.pull_request.number}/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
-      updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
+      updateComment ? await upsertComment(body, commentHeader, octokit) : await createComment(body, octokit);
     } else {
       core.info("github-token received is empty. Skipping writing a comment in the PR.");
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
@@ -93,7 +93,7 @@ async function createComment(body, octokit) {
   });
 }
 
-async function upsertComment(body, commentHeaderPrefix, octokit) {
+async function upsertComment(body, commentHeader, octokit) {
   const issueComments = await octokit.rest.issues.listComments({
     repo: github.context.repo.repo,
     owner: github.context.repo.owner,
@@ -101,7 +101,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   });
 
   const existingComment = issueComments.data.find(comment =>
-    comment.body.includes(commentHeaderPrefix),
+    comment.body.includes(commentHeader),
   );
 
   if (existingComment) {
