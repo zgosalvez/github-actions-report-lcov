@@ -81,13 +81,10 @@ async function run() {
 
     if (gitHubToken && allowedGitHubEvents.includes(github.context.eventName)) {
       const octokit = await github.getOctokit(gitHubToken);
-      const summary = await summarize(mergedCoverageFile);
-      const details = await detail(mergedCoverageFile, octokit);
-
       const body = buildMessageBody({
         header: buildHeader(titlePrefix),
-        summary,
-        details,
+        summary: await summarize(mergedCoverageFile),
+        details: await detail(mergedCoverageFile, octokit),
         additionalMessage,
         isMinimumCoverageReached,
         errorMessage,
