@@ -41,9 +41,7 @@ function buildMessageBody(params) {
     sha().full
   }) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${
     github.context.runId
-  })\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${
-    additionalMessage ? `\n${additionalMessage}` : ''
-  }`;
+  })\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>\n${additionalMessage}`;
 
   if (!isMinimumCoverageReached) {
     body += `\n:no_entry: ${errorMessage}`;
