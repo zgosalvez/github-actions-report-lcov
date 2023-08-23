@@ -31,7 +31,7 @@ function sha() {
 }
 
 async function run() {
-  const { 
+  const {
     coverageFilesPattern,
     titlePrefix,
     additionalMessage,
@@ -39,7 +39,7 @@ async function run() {
     artifactName,
     minimumCoverage,
     gitHubToken
-  } = readAndSetInputs();  
+  } = readAndSetInputs();
 
   try {
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
@@ -129,9 +129,9 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
   args.push(artifactPath);
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
-  
+
   const globber = await glob.create(`${artifactPath}/**`);
-  const htmlFiles = await globber.glob();  
+  const htmlFiles = await globber.glob();
 
   artifact
     .create()
@@ -140,7 +140,7 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
       htmlFiles,
       artifactPath,
       { continueOnError: false },
-    );  
+    );
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {

@@ -1,0 +1,14 @@
+root = true
+
+[*.{json,yml}]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+tab_width = 2
+
+[src/**.js]
+indent_style = space
+indent_size = 2
+tab_width = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
