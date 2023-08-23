@@ -235,7 +235,9 @@ async function detail(coverageFile, octokit) {
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
 
-      if (line.startsWith(changedFile)) return true;
+      if (line.startsWith(changedFile)) {
+        return true;
+      }
     }
 
     return false;
