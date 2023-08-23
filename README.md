@@ -1,15 +1,19 @@
 # GitHub Action — Report LCOV
 
 This GitHub Action (written in JavaScript) allows you to leverage GitHub Actions to report the code coverage from LCOV files. This action includes:
+
 - Generating an HTML report as an artifact
 - Commenting on a pull request (if the workflow was triggered by this event)
 - Failing if a minimum coverage is not met
 
 ## Usage
+
 ### Pre-requisites
+
 Create a workflow `.yml` file in your `.github/workflows` directory. An [example workflow](#common-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
 
 ### Inputs
+
 For more information on these inputs, see the [Workflow syntax for GitHub Actions](https://docs.github.com/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstepswith)
 
 - `coverage-files`: The coverage files to scan. For example, `coverage/lcov.*.info`
@@ -22,6 +26,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `update-comment`: Set to `true` to update the previous code coverage comment if such exists. When set to `false`, a new comment is always created. Optional. Default: `false`
 
 ### Outputs
+
 - `total-coverage`: The total coverage from scanned files.
 
 Sample comment:
@@ -55,11 +60,13 @@ jobs:
         working-directory: apps/my-first-app
         update-comment: true
 ```
-*Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
+
+_Note:_ Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
 
 ### Flutter Workflows
 
 This is used in my opinionated [GitHub Actions: Flutter Workflows](https://github.com/zgosalvez/github-actions-flutter-workflows) repository along with other actions for a complete end-to-end DevOps experience.
 
 ## License
+
 The scripts and documentation in this project are released under the [MIT License](LICENSE.md)
