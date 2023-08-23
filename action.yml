@@ -13,7 +13,7 @@ inputs:
       _Note:_ When downloading, it will be extracted in an `html` directory. Optional. Default: `` (Skips uploading of artifacts)'
   minimum-coverage:
     description: 'The minimum coverage to pass the check. Optional. Default: `0` (always passes)'
-    default: 0
+    default: '0'
   github-token:
     description: |
       'Set the GitHub token to have the action comment the coverage summary in the pull request.
