@@ -19239,36 +19239,58 @@ const path = __nccwpck_require__(1017);
 
 const events = ['pull_request', 'pull_request_target'];
 
+function readAndSetInputs() {
+  return {
+    coverageFilesPattern: core.getInput('coverage-files'),
+    titlePrefix: core.getInput('title-prefix'),
+    additionalMessage: core.getInput('additional-message'),
+    updateComment: core.getInput('update-comment') === 'true',
+    artifactName: core.getInput('artifact-name'),
+    minimumCoverage: core.getInput('minimum-coverage'),
+    gitHubToken: core.getInput('github-token'),
+    workingDirectory: core.getInput('working-directory') || './',
+  };
+}
+
+function sha() {
+  const full = github.context.payload.pull_request.head.sha;
+  return {
+    full,
+    short: sha.substr(0, 7),
+  };
+}
+
 async function run() {
+  const { 
+    coverageFilesPattern,
+    titlePrefix,
+    additionalMessage,
+    updateComment,
+    artifactName,
+    minimumCoverage,
+    gitHubToken
+  } = readAndSetInputs();  
+
   try {
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
-    const titlePrefix = core.getInput('title-prefix');
-    const additionalMessage = core.getInput('additional-message');
-    const updateComment = core.getInput('update-comment') === 'true';
-    const artifactName = core.getInput('artifact-name');
 
     if (artifactName) {
       await genhtml(artifactName, coverageFiles, tmpPath);
     }
 
-    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
-    const totalCoverage = lcovTotal(coverageFile);
-    const minimumCoverage = core.getInput('minimum-coverage');
-    const gitHubToken = core.getInput('github-token').trim();
+    const mergedCoverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    const totalCoverage = lcovTotal(mergedCoverageFile);
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
     if (gitHubToken !== '' && events.includes(github.context.eventName)) {
       const octokit = await github.getOctokit(gitHubToken);
-      const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
-      const sha = github.context.payload.pull_request.head.sha;
-      const shaShort = sha.substr(0, 7);
+      const summary = await summarize(mergedCoverageFile);
+      const details = await detail(mergedCoverageFile, octokit);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
+      let body = `${commentHeaderPrefix} [<code>${sha().short}</code>](${github.context.payload.pull_request.number}/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
@@ -19329,7 +19351,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
 }
 
 async function genhtml(artifactName, coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory').trim() || './';
+  const { workingDirectory } = readAndSetInputs();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
@@ -19341,7 +19363,7 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
   const globber = await glob.create(`${artifactPath}/**`);
   const htmlFiles = await globber.glob();  
 
-  await artifact
+  artifact
     .create()
     .uploadArtifact(
       artifactName,
@@ -19370,7 +19392,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   return mergedCoverageFile;
 }
 
-async function summarize(coverageFile) {
+async function summarize(mergedCoverageFile) {
   let output = '';
 
   const options = {};
@@ -19385,7 +19407,7 @@ async function summarize(coverageFile) {
 
   await exec.exec('lcov', [
     '--summary',
-    coverageFile,
+    mergedCoverageFile,
     '--rc',
     'lcov_branch_coverage=1'
   ], options);
