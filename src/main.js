@@ -57,6 +57,10 @@ function runningInPullRequest() {
   return allowedGitHubEvents.includes(github.context.eventName);
 }
 
+function getCommonLcovArgs() {
+  return ['--rc', 'lcov_branch_coverage=1'];
+}
+
 async function run() {
   const {
     coverageFilesPattern,
@@ -150,7 +154,7 @@ async function generateHTMLAndUpload(artifactName, coverageFiles, tmpPath) {
   const { workingDirectory } = readAndSetInputs();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
 
-  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1', '--output-directory', artifactPath];
+  const args = [...coverageFiles, ...getCommonLcovArgs(), '--output-directory', artifactPath];
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
@@ -172,7 +176,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
+  await exec.exec('lcov', [...args, ...getCommonLcovArgs()]);
 
   return mergedCoverageFile;
 }
@@ -190,7 +194,7 @@ async function summarize(mergedCoverageFile) {
     },
   };
 
-  await exec.exec('lcov', ['--summary', mergedCoverageFile, '--rc', 'lcov_branch_coverage=1'], options);
+  await exec.exec('lcov', ['--summary', mergedCoverageFile, ...getCommonLcovArgs()], options);
 
   const lines = output.trim().split(/\r?\n/);
 
@@ -212,7 +216,7 @@ async function detail(coverageFile, octokit) {
     },
   };
 
-  await exec.exec('lcov', ['--list', coverageFile, '--list-full-path', '--rc', 'lcov_branch_coverage=1'], options);
+  await exec.exec('lcov', ['--list', coverageFile, '--list-full-path', ...getCommonLcovArgs()], options);
 
   let lines = output.trim().split(/\r?\n/);
 
