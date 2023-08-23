@@ -27,7 +27,7 @@ async function run() {
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
-    const gitHubToken = core.getInput('github-token').trim();
+    const gitHubToken = core.getInput('github-token');
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
@@ -99,7 +99,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
 }
 
 async function genhtml(artifactName, coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory').trim() || './';
+  const workingDirectory = core.getInput('working-directory') || './';
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
