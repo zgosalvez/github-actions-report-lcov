@@ -19304,7 +19304,7 @@ async function run() {
     const coverageFiles = await globber.glob();
 
     if (artifactName) {
-      await genhtml(artifactName, coverageFiles, tmpPath);
+      await generateHTMLAndUpload(artifactName, coverageFiles, tmpPath);
     }
 
     const mergedCoverageFile = await mergeCoverages(coverageFiles, tmpPath);
@@ -19376,7 +19376,7 @@ async function upsertComment(body, commentHeader, octokit) {
   }
 }
 
-async function genhtml(artifactName, coverageFiles, tmpPath) {
+async function generateHTMLAndUpload(artifactName, coverageFiles, tmpPath) {
   const { workingDirectory } = readAndSetInputs();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
 
