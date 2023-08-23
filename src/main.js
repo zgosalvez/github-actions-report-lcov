@@ -30,6 +30,30 @@ function sha() {
   };
 }
 
+function buildHeader(titlePrefix) {
+  return `### ${
+    titlePrefix ? `${titlePrefix} ` : ''
+  }[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
+}
+
+function buildMessageBody(params) {
+  const { header, summary, details, additionalMessage, isMinimumCoverageReached, errorMessage } = params;
+
+  let body = `${header} [<code>${sha().short}</code>](${github.context.payload.pull_request.number}/commits/${
+    sha().full
+  }) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${
+    github.context.runId
+  })\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${
+    additionalMessage ? `\n${additionalMessage}` : ''
+  }`;
+
+  if (!isMinimumCoverageReached) {
+    body += `\n:no_entry: ${errorMessage}`;
+  }
+
+  return body;
+}
+
 async function run() {
   const {
     coverageFilesPattern,
@@ -59,22 +83,17 @@ async function run() {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(mergedCoverageFile);
       const details = await detail(mergedCoverageFile, octokit);
-      const commentHeader = `### ${
-        titlePrefix ? `${titlePrefix} ` : ''
-      }[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeader} [<code>${sha().short}</code>](${
-        github.context.payload.pull_request.number
-      }/commits/${sha().full}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${
-        github.context.runId
-      })\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${
-        additionalMessage ? `\n${additionalMessage}` : ''
-      }`;
 
-      if (!isMinimumCoverageReached) {
-        body += `\n:no_entry: ${errorMessage}`;
-      }
+      const body = buildMessageBody({
+        header: buildHeader(titlePrefix),
+        summary,
+        details,
+        additionalMessage,
+        isMinimumCoverageReached,
+        errorMessage,
+      });
 
-      updateComment ? await upsertComment(body, commentHeader, octokit) : await createComment(body, octokit);
+      updateComment ? await upsertComment(body, buildHeader(titlePrefix), octokit) : await createComment(body, octokit);
     } else {
       core.info('github-token received is empty. Skipping writing a comment in the PR.');
       core.info(
