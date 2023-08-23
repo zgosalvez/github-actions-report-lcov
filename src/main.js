@@ -159,7 +159,7 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
-  const mergedCoverageFile = `${tmpPath}/lcov.info`;
+  const mergedCoverageFile = `${tmpPath}/merged-lcov.info`;
   const args = [];
 
   for (const coverageFile of coverageFiles) {
