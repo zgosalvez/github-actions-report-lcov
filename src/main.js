@@ -227,7 +227,10 @@ async function detail(coverageFile, octokit) {
   const changedFiles = listFilesResponse.map((file) => file.filename);
 
   lines = lines.filter((line, index) => {
-    if (index <= 2) return true; // Include header
+    const includeHeader = () => index <= 2;
+    if (includeHeader()) {
+      return true;
+    }
 
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
