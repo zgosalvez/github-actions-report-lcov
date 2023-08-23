@@ -5,7 +5,9 @@
   "main": "dist/main/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "ncc build src/main.js -o dist/main --source-map --license licenses.txt && ncc build src/post.js -o dist/post --source-map --license licenses.txt"
+    "build:post": "ncc build src/post.js -o dist/post --source-map --license licenses.txt",
+    "build:main": "ncc build src/main.js -o dist/main --source-map --license licenses.txt",
+    "prepare": "npm run build:post && npm run build:main"
   },
   "repository": {
     "type": "git",
