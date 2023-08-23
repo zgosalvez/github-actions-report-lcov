@@ -16,7 +16,7 @@ function readAndSetInputs() {
     additionalMessage: core.getInput('additional-message'),
     updateComment: core.getInput('update-comment') === 'true',
     artifactName: core.getInput('artifact-name'),
-    minimumCoverage: core.getInput('minimum-coverage'),
+    minimumCoverage: Number(core.getInput('minimum-coverage')),
     gitHubToken: core.getInput('github-token'),
     workingDirectory: core.getInput('working-directory') || './',
   };
