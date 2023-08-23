@@ -133,7 +133,7 @@ async function genhtml(artifactName, coverageFiles, tmpPath) {
   const globber = await glob.create(`${artifactPath}/**`);
   const htmlFiles = await globber.glob();  
 
-  await artifact
+  artifact
     .create()
     .uploadArtifact(
       artifactName,
