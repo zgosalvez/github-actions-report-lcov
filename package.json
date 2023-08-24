@@ -9,9 +9,10 @@
     "lint:check": "rome check src/*.js",
     "format": "rome format src/*.js --write",
     "format:check": "rome format src/*.js",
-    "build:post": "ncc build src/post.js -o dist/post --source-map --license licenses.txt",
+    "build:pre": "ncc build src/pre.js -o dist/pre --source-map --license licenses.txt",
     "build:main": "ncc build src/main.js -o dist/main --source-map --license licenses.txt",
-    "prepare": "npm run format && npm run lint && npm run build:post && npm run build:main"
+    "build:post": "ncc build src/post.js -o dist/post --source-map --license licenses.txt",
+    "prepare": "npm run format && npm run lint && npm run build:pre && npm run build:post && npm run build:main"
   },
   "repository": {
     "type": "git",
