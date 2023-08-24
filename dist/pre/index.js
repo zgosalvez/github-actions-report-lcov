@@ -2826,15 +2826,21 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const core = __nccwpck_require__(186);
+const { execSync } = __nccwpck_require__(81);
 
 function run() {
   try {
     console.log('Installing lcov');
 
-    const { execSync } = __nccwpck_require__(81);
-
-    execSync('sudo apt-get update');
-    execSync('sudo apt-get install --assume-yes lcov');
+    const platform = process.env.RUNNER_OS;
+    if (platform === 'Linux') {
+      execSync('sudo apt-get update');
+      execSync('sudo apt-get install --assume-yes lcov');
+    } else if (platform === 'macOS') {
+      execSync('brew install lcov');
+    } else if (platform === 'Windows') {
+      execSync('choco install lcov');
+    }
 
     console.log('lcov installed successfully');
   } catch (error) {
