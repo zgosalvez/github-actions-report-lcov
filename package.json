@@ -5,6 +5,7 @@
   "main": "dist/main/index.js",
   "scripts": {
     "install:git:hooks": "cp git-hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit",
+    "preinstall": "npm run install:git:hooks",
     "lint": "rome check src/*.js --apply",
     "lint:check": "rome check src/*.js",
     "format": "rome format src/*.js --write",
