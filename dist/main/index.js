@@ -19315,7 +19315,7 @@ async function run() {
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
     if (gitHubToken && runningInPullRequest()) {
-      const octokit = await github.getOctokit(gitHubToken);
+      const octokit = github.getOctokit(gitHubToken);
       const body = buildMessageBody({
         header: buildHeader(titlePrefix),
         summary: await summarize(mergedCoverageFile),
