@@ -200,6 +200,16 @@ async function summarize(mergedCoverageFile) {
   return lines.join('\n');
 }
 
+async function getChangedFilenames(octokitInstance) {
+  const listFilesOptions = octokitInstance.rest.pulls.listFiles.endpoint.merge({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    pull_number: github.context.payload.pull_request.number,
+  });
+  const listFilesResponse = await octokitInstance.paginate(listFilesOptions);
+  return listFilesResponse.map((file) => file.filename);
+}
+
 async function detail(coverageFile, octokit) {
   let output = '';
 
@@ -222,21 +232,13 @@ async function detail(coverageFile, octokit) {
   lines.pop(); // Removes "Total..."
   lines.pop(); // Removes "========"
 
-  const listFilesOptions = octokit.rest.pulls.listFiles.endpoint.merge({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    pull_number: github.context.payload.pull_request.number,
-  });
-  const listFilesResponse = await octokit.paginate(listFilesOptions);
-  const changedFiles = listFilesResponse.map((file) => file.filename);
-
   lines = lines.filter((line, index) => {
     const includeHeader = index <= 2;
     if (includeHeader) {
       return true;
     }
 
-    for (const changedFile of changedFiles) {
+    for (const changedFile of getChangedFilenames(octokit)) {
       console.log(`${line} === ${changedFile}`);
 
       if (line.startsWith(changedFile)) {
