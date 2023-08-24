@@ -19234,8 +19234,8 @@ const exec = __nccwpck_require__(1514);
 const github = __nccwpck_require__(5438);
 const glob = __nccwpck_require__(8090);
 const lcovTotal = __nccwpck_require__(9672);
-const os = __nccwpck_require__(2037);
 const path = __nccwpck_require__(1017);
+const fs = __nccwpck_require__(7147);
 
 function readAndSetInputs() {
   return {
@@ -19301,7 +19301,8 @@ async function run() {
   } = readAndSetInputs();
 
   try {
-    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const tmpPath = `${process.env.GITHUB_WORKSPACE}/lcov-tmp-dir`;
+    fs.mkdirSync(tmpPath);
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
 

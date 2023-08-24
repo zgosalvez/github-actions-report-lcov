@@ -4,8 +4,8 @@ const exec = require('@actions/exec');
 const github = require('@actions/github');
 const glob = require('@actions/glob');
 const lcovTotal = require('lcov-total');
-const os = require('os');
 const path = require('path');
+const fs = require('fs');
 
 function readAndSetInputs() {
   return {
@@ -71,7 +71,8 @@ async function run() {
   } = readAndSetInputs();
 
   try {
-    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const tmpPath = `${process.env.GITHUB_WORKSPACE}/lcov-tmp-dir`;
+    fs.mkdirSync(tmpPath);
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
 
