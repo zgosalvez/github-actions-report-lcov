@@ -39,6 +39,7 @@ outputs:
 runs:
   using: 'node16'
   pre: 'dist/pre/index.js'
+  pre-if: runner.os == 'linux' || runner.os == 'macOS'
   main: 'dist/main/index.js'
   post: 'dist/post/index.js'
 branding:

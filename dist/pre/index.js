@@ -2838,8 +2838,6 @@ function run() {
       execSync('sudo apt-get install --assume-yes lcov');
     } else if (platform === 'macOS') {
       execSync('brew install lcov');
-    } else if (platform === 'Windows') {
-      execSync('choco install lcov');
     }
 
     console.log('lcov installed successfully');
