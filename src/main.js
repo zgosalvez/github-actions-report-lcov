@@ -24,7 +24,7 @@ function sha() {
   const full = github.context.payload.pull_request.head.sha;
   return {
     full,
-    short: sha.substr(0, 7),
+    short: full.substr(0, 7),
   };
 }
 
