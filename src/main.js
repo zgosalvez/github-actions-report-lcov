@@ -59,6 +59,34 @@ function getCommonLcovArgs() {
   return ['--rc', 'lcov_branch_coverage=1'];
 }
 
+async function getExistingPRComment(octokitInstance, commentHeader) {
+  const issueComments = await octokitInstance.rest.issues.listComments({
+    repo: github.context.repo.repo,
+    owner: github.context.repo.owner,
+    issue_number: github.context.payload.pull_request.number,
+  });
+
+  return issueComments.data.find((comment) => comment.body.includes(commentHeader));
+}
+
+async function commentOnPR(params) {
+  const { updateComment, header, body, octokit } = params;
+
+  const existingComment = await getExistingPRComment(octokit, header);
+  const shouldUpdateComment = updateComment && existingComment;
+  const prAction = shouldUpdateComment ? octokit.rest.issues.updateComment : octokit.rest.issues.createComment;
+  const data = {
+    repo: github.context.repo.repo,
+    owner: github.context.repo.owner,
+    body,
+    ...(shouldUpdateComment
+      ? { comment_id: existingComment.id }
+      : { issue_number: github.context.payload.pull_request.number }),
+  };
+
+  prAction(data);
+}
+
 async function run() {
   const {
     coverageFilesPattern,
@@ -96,7 +124,12 @@ async function run() {
         errorMessage,
       });
 
-      updateComment ? await upsertComment(body, buildHeader(titlePrefix), octokit) : await createComment(body, octokit);
+      commentOnPR({
+        octokit,
+        updateComment,
+        header: buildHeader(titlePrefix),
+        body,
+      });
     } else {
       core.info('github-token received is empty. Skipping writing a comment in the PR.');
       core.info(
@@ -110,42 +143,6 @@ async function run() {
     }
   } catch (error) {
     core.setFailed(error.message);
-  }
-}
-
-async function createComment(body, octokit) {
-  core.debug('Creating a comment in the PR.');
-
-  await octokit.rest.issues.createComment({
-    repo: github.context.repo.repo,
-    owner: github.context.repo.owner,
-    issue_number: github.context.payload.pull_request.number,
-    body,
-  });
-}
-
-async function upsertComment(body, commentHeader, octokit) {
-  const issueComments = await octokit.rest.issues.listComments({
-    repo: github.context.repo.repo,
-    owner: github.context.repo.owner,
-    issue_number: github.context.payload.pull_request.number,
-  });
-
-  const existingComment = issueComments.data.find((comment) => comment.body.includes(commentHeader));
-
-  if (existingComment) {
-    core.debug(`Updating comment, id: ${existingComment.id}.`);
-
-    await octokit.rest.issues.updateComment({
-      repo: github.context.repo.repo,
-      owner: github.context.repo.owner,
-      comment_id: existingComment.id,
-      body,
-    });
-  } else {
-    core.debug('Comment does not exist, a new comment will be created.');
-
-    await createComment(body, octokit);
   }
 }
 
