@@ -232,13 +232,14 @@ async function detail(coverageFile, octokit) {
   lines.pop(); // Removes "Total..."
   lines.pop(); // Removes "========"
 
+  const changedFiles = await getChangedFilenames(octokit);
   lines = lines.filter((line, index) => {
     const includeHeader = index <= 2;
     if (includeHeader) {
       return true;
     }
 
-    for (const changedFile of getChangedFilenames(octokit)) {
+    for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
 
       if (line.startsWith(changedFile)) {
