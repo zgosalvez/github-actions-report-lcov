@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "rome.rome",
+    "EditorConfig.EditorConfig",
+    "redhat.vscode-yaml",
+    "DavidAnson.vscode-markdownlint"
+  ],
+  "unwantedRecommendations": []
+}
