@@ -5,6 +5,8 @@ async function run() {
     console.log('Installing lcov');
 
     const { execSync } = require('child_process');
+
+    execSync('sudo apt-get update');
     execSync('sudo apt-get install --assume-yes lcov');
 
     console.log('lcov installed successfully');

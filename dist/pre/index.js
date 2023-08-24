@@ -2832,6 +2832,8 @@ async function run() {
     console.log('Installing lcov');
 
     const { execSync } = __nccwpck_require__(81);
+
+    execSync('sudo apt-get update');
     execSync('sudo apt-get install --assume-yes lcov');
 
     console.log('lcov installed successfully');
