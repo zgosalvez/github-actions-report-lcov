@@ -19464,8 +19464,8 @@ async function detail(coverageFile, octokit) {
   const changedFiles = listFilesResponse.map((file) => file.filename);
 
   lines = lines.filter((line, index) => {
-    const includeHeader = () => index <= 2;
-    if (includeHeader()) {
+    const includeHeader = index <= 2;
+    if (includeHeader) {
       return true;
     }
 
@@ -19480,8 +19480,8 @@ async function detail(coverageFile, octokit) {
     return false;
   });
 
-  const onlyHeaderRemains = () => lines.length === 3;
-  return onlyHeaderRemains() ? ' n/a' : `\n  ${lines.join('\n  ')}`;
+  const onlyHeaderRemains = lines.length === 3;
+  return onlyHeaderRemains ? ' n/a' : `\n  ${lines.join('\n  ')}`;
 }
 
 run();
