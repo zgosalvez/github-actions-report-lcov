@@ -45,20 +45,18 @@ jobs:
     needs: testing
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    # ... Generate LCOV files or download it from a different job
-    - name: Setup LCOV
-      uses: hrishikesh-kadam/setup-lcov@v1
-    - name: Report code coverage
-      uses: zgosalvez/github-actions-report-lcov@v3
-      with:
-        coverage-files: coverage/lcov.*.info
-        minimum-coverage: 90
-        artifact-name: code-coverage-report
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: apps/my-first-app
-        update-comment: true
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v3
+        with:
+          coverage-files: coverage/lcov.*.info
+          minimum-coverage: 90
+          artifact-name: code-coverage-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: apps/my-first-app
+          update-comment: true
 ```
 
 _Note:_ Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
