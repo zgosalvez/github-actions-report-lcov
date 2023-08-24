@@ -1,6 +1,6 @@
 const core = require('@actions/core');
 
-async function run() {
+function run() {
   try {
     console.log('Installing lcov');
 

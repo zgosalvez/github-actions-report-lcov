@@ -2827,7 +2827,7 @@ var __webpack_exports__ = {};
 (() => {
 const core = __nccwpck_require__(186);
 
-async function run() {
+function run() {
   try {
     console.log('Installing lcov');
 
