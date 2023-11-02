@@ -26,7 +26,7 @@
     "@actions/io": "^1.1.3",
     "install": "^0.13.0",
     "lcov-total": "^1.0.7",
-    "npm": "^9.8.0"
+    "npm": "^10.2.2"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.0",
