@@ -31,7 +31,7 @@ outputs:
       description: 'The total coverage from scanned files.'
 
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/main/index.js'
   post: 'dist/post/index.js'
 branding:
