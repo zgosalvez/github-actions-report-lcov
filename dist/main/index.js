@@ -39648,7 +39648,10 @@ async function run() {
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
-    if (gitHubToken !== '' && events.includes(github.context.eventName)) {
+    const hasGithubToken = gitHubToken !== '';
+    const isPR = events.includes(github.context.eventName);
+
+    if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit);
@@ -39662,9 +39665,12 @@ async function run() {
       }
 
       updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
-    } else {
+    } else if (!hasGithubToken) {
       core.info("github-token received is empty. Skipping writing a comment in the PR.");
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
+    } else if (!isPR) {
+      core.info("The event is not a pull request. Skipping writing a comment.");
+      core.info("The event type is: " + github.context.eventName);
     }
 
     core.setOutput("total-coverage", totalCoverage);
