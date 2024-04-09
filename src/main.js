@@ -117,14 +117,16 @@ async function genhtml(coverageFiles, tmpPath) {
     const globber = await glob.create(`${artifactPath}/**`);
     const htmlFiles = await globber.glob();
 
-    core.info(`Uploading artifacts.`);
+    core.info(`Uploading artifacts for ${artifactName}`);
+
+    core.info(`files: ${htmlFiles}`);
+    core.info(`path: ${artifactPath}`);
 
     await artifact
       .uploadArtifact(
         artifactName,
         htmlFiles,
         artifactPath,
-        { continueOnError: false },
       );
   } else {
     core.info("Skip uploading artifacts");
