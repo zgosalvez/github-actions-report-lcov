@@ -1,4 +1,4 @@
-const artifact = require('@actions/artifact');
+const {DefaultArtifactClient} = require('@actions/artifact');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
@@ -113,18 +113,17 @@ async function genhtml(coverageFiles, tmpPath) {
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
   if (artifactName !== '') {
+    const artifact = new DefaultArtifactClient();
     const globber = await glob.create(`${artifactPath}/**`);
-    const htmlFiles = await globber.glob();
+    const htmlFiles = (await globber.glob()).filter(item => item !== artifactPath);
 
     core.info(`Uploading artifacts.`);
 
     await artifact
-      .create()
       .uploadArtifact(
         artifactName,
         htmlFiles,
         artifactPath,
-        { continueOnError: false },
       );
   } else {
     core.info("Skip uploading artifacts");
