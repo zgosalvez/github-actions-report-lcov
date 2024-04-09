@@ -115,7 +115,7 @@ async function genhtml(coverageFiles, tmpPath) {
   if (artifactName !== '') {
     const artifact = new DefaultArtifactClient();
     const globber = await glob.create(`${artifactPath}/**`);
-    const htmlFiles = await globber.glob();
+    const htmlFiles = (await globber.glob()).filter(item => item !== artifactPath);
 
     core.info(`Uploading artifacts for ${artifactName}`);
 
