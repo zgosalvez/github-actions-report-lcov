@@ -18,8 +18,9 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
+    const workingDirectory = core.getInput('working-directory').trim() || './';
 
-    await genhtml(coverageFiles, tmpPath);
+    await genhtml(coverageFiles, tmpPath, workingDirectory);
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
@@ -34,7 +35,7 @@ async function run() {
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
+      const details = await detail(coverageFile, workingDirectory, octokit);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -101,8 +102,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   }
 }
 
-async function genhtml(coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory').trim() || './';
+async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
@@ -178,7 +178,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, workingDirectory, octokit) {
   let output = '';
 
   const options = {};
@@ -222,7 +222,7 @@ async function detail(coverageFile, octokit) {
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
 
-      if (line.startsWith(changedFile)) return true;
+      if (path.join(workingDirectory, line).startsWith(changedFile)) return true;
     }
 
     return false;
