@@ -19,7 +19,10 @@ async function run() {
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
 
-    await genhtml(coverageFiles, tmpPath);
+    const genHtmlReport = core.getInput('generate-html-report') === 'true';
+    if (genHtmlReport) {
+      await genhtml(coverageFiles, tmpPath);
+    }
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
