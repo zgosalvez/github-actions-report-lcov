@@ -13,7 +13,7 @@ jobs:
     - name: Clone the repository
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@74606c30450304eee8660aae751818321754feb1
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@b88cd0aad2c36a63e42c71f81cb1958fed95ac87
 
   build_test:
     name: Build & Test
@@ -26,7 +26,7 @@ jobs:
         ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
     - name: Get runs.using version
       id: get-runs-using-version
-      uses: zgosalvez/github-actions-get-action-runs-using-version@c9dd1520715888844dcbd32b769e43790cb2bd1d
+      uses: zgosalvez/github-actions-get-action-runs-using-version@04dffadd9a86fd1f93d8485ea11bb14530f801ec
     - name: Set up Node
       uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
       with:
