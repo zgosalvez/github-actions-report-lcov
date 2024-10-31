@@ -4,17 +4,15 @@
   "description": "Report the code coverage from LCOV files",
   "main": "dist/main/index.js",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . && standard src/",
+    "format": "standard --fix src/",
     "prepare": "ncc build src/main.js -o dist/main --source-map --license licenses.txt && ncc build src/post.js -o dist/post --source-map --license licenses.txt"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zgosalvez/github-actions-report-lcov.git"
   },
-  "keywords": [
-    "actions",
-    "node"
-  ],
+  "keywords": ["actions", "node"],
   "author": "Zennon Gosalvez",
   "license": "MIT",
   "dependencies": {
@@ -30,6 +28,7 @@
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.2",
-    "eslint": "^9.14.0"
+    "eslint": "^9.14.0",
+    "standard": "^17.1.2"
   }
 }
