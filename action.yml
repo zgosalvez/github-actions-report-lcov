@@ -9,6 +9,10 @@ inputs:
     required: true
   artifact-name:
     description: 'The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory. Optional. Default: `` (Skips uploading of artifacts)'
+  generate-html-report:
+    description: 'Set to `false` to skip generating the HTML report entirely. Optional. Default: `true`'
+    required: false
+    default: "true"
   minimum-coverage:
     description: 'The minimum coverage to pass the check. Optional. Default: `0` (always passes)'
     default: 0
