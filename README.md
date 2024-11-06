@@ -5,6 +5,8 @@ This GitHub Action (written in JavaScript) allows you to leverage GitHub Actions
 - Commenting on a pull request (if the workflow was triggered by this event)
 - Failing if a minimum coverage is not met
 
+Based on the code from [zgosalvez/github-actions-report-lcov](https://github.com/zgosalvez/github-actions-report-lcov).
+
 ## Usage
 ### Pre-requisites
 Create a workflow `.yml` file in your `.github/workflows` directory. An [example workflow](#common-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
@@ -46,7 +48,7 @@ jobs:
     - name: Setup LCOV
       uses: hrishikesh-kadam/setup-lcov@v1
     - name: Report code coverage
-      uses: zgosalvez/github-actions-report-lcov@v3
+      uses: mbta/github-actions-report-lcov@v4
       with:
         coverage-files: coverage/lcov.*.info
         minimum-coverage: 90
@@ -55,11 +57,13 @@ jobs:
         working-directory: apps/my-first-app
         update-comment: true
 ```
-*Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
+*Note:* Only the following events are supported:
 
-### Flutter Workflows
+- `pull_request`
+- `pull_request_target`
+- `workflow_run` (when triggered by a PR)
 
-This is used in my opinionated [GitHub Actions: Flutter Workflows](https://github.com/zgosalvez/github-actions-flutter-workflows) repository along with other actions for a complete end-to-end DevOps experience.
+This action does nothing when triggered by other event types.
 
 ## License
 The scripts and documentation in this project are released under the [MIT License](LICENSE.md)
