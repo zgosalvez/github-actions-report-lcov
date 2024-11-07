@@ -1,4 +1,4 @@
-const artifact = require('@actions/artifact');
+const {DefaultArtifactClient} = require('@actions/artifact');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
@@ -7,62 +7,127 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
-function pullRequests(github) {
-  if (github.context.eventName === "pull_request") {
-    return [github.context.payload.pull_request];
-  }
-  if (github.context.eventName == "workflow_run") {
-    if (github.context.payload.workflow_run.pull_requests.length > 0) {
-      return github.context.payload.workflow_run.pull_requests;
+const events = ['pull_request', 'pull_request_target'];
+
+async function run() {
+  try {
+    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const coverageFilesPattern = core.getInput('coverage-files');
+    const globber = await glob.create(coverageFilesPattern);
+    const coverageFiles = await globber.glob();
+    const titlePrefix = core.getInput('title-prefix');
+    const additionalMessage = core.getInput('additional-message');
+    const updateComment = core.getInput('update-comment') === 'true';
+
+    await genhtml(coverageFiles, tmpPath);
+
+    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    const totalCoverage = lcovTotal(coverageFile);
+    const minimumCoverage = core.getInput('minimum-coverage');
+    const gitHubToken = core.getInput('github-token').trim();
+    const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
+    const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
+
+    const hasGithubToken = gitHubToken !== '';
+    const isPR = events.includes(github.context.eventName);
+
+    if (hasGithubToken && isPR) {
+      const octokit = await github.getOctokit(gitHubToken);
+      const summary = await summarize(coverageFile);
+      const details = await detail(coverageFile, octokit);
+      const sha = github.context.payload.pull_request.head.sha;
+      const shaShort = sha.substr(0, 7);
+      const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
+      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
+
+      if (!isMinimumCoverageReached) {
+        body += `\n:no_entry: ${errorMessage}`;
+      }
+
+      updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
+    } else if (!hasGithubToken) {
+      core.info("github-token received is empty. Skipping writing a comment in the PR.");
+      core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
+    } else if (!isPR) {
+      core.info("The event is not a pull request. Skipping writing a comment.");
+      core.info("The event type is: " + github.context.eventName);
     }
+
+    core.setOutput("total-coverage", totalCoverage);
+
+    if (!isMinimumCoverageReached) {
+      throw Error(errorMessage);
+    }
+  } catch (error) {
+    core.setFailed(error.message);
   }
-  if (!!process.env.PR_SHA && !!process.env.PR_NUMBER &&
-      process.env.PR_SHA != "" && process.env.PR_NUMBER != "") {
-    return [{
-      number: process.env.PR_NUMBER,
-      head: {
-        sha: process.env.PR_SHA,
-      },
-      url: `https://api.github.com/repos/${github.context.repo.owner}/${github.context.repo.repo}/pulls/${process.env.PR_NUMBER}`
-    }];
-  }
-  return [];
 }
 
-function ownerRepo(url) {
-  const match = url.match(/\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pulls\//);
-  return {
-    owner: match[1],
-    repo: match[2],
-  };
+async function createComment(body, octokit) {
+  core.debug("Creating a comment in the PR.")
+
+  await octokit.rest.issues.createComment({
+    repo: github.context.repo.repo,
+    owner: github.context.repo.owner,
+    issue_number: github.context.payload.pull_request.number,
+    body,
+  });
 }
 
-function ensureTrailingSlash(path) {
-  if (path.endsWith("/")) {
-    return path;
+async function upsertComment(body, commentHeaderPrefix, octokit) {
+  const issueComments = await octokit.rest.issues.listComments({
+    repo: github.context.repo.repo,
+    owner: github.context.repo.owner,
+    issue_number: github.context.payload.pull_request.number,
+  });
+
+  const existingComment = issueComments.data.find(comment =>
+    comment.body.includes(commentHeaderPrefix),
+  );
+
+  if (existingComment) {
+    core.debug(`Updating comment, id: ${existingComment.id}.`);
+
+    await octokit.rest.issues.updateComment({
+      repo: github.context.repo.repo,
+      owner: github.context.repo.owner,
+      comment_id: existingComment.id,
+      body,
+    });
+  } else {
+    core.debug(`Comment does not exist, a new comment will be created.`);
+
+    await createComment(body, octokit);
   }
-
-  return path + "/";
 }
 
-async function genhtml(coverageFiles, tmpPath, workingDirectory) {
+async function genhtml(coverageFiles, tmpPath) {
+  const workingDirectory = core.getInput('working-directory').trim() || './';
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1', '--output-directory', artifactPath];
+  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
+
+  args.push('--output-directory');
+  args.push(artifactPath);
 
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
-  const globber = await glob.create(`${artifactPath}/**`);
-  const htmlFiles = await globber.glob();
+  if (artifactName !== '') {
+    const artifact = new DefaultArtifactClient();
+    const globber = await glob.create(`${artifactPath}/**/**.*`);
+    const htmlFiles = await globber.glob();
 
-  await artifact
-    .create()
-    .uploadArtifact(
-      artifactName,
-      htmlFiles,
-      artifactPath,
-      { continueOnError: false },
-    );
+    core.info(`Uploading artifacts.`);
+
+    await artifact
+      .uploadArtifact(
+        artifactName,
+        htmlFiles,
+        artifactPath,
+      );
+  } else {
+    core.info("Skip uploading artifacts");
+  }
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
@@ -79,7 +144,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-  await exec.exec('lcov', args);
+  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
 
   return mergedCoverageFile;
 }
@@ -100,18 +165,20 @@ async function summarize(coverageFile) {
   await exec.exec('lcov', [
     '--summary',
     coverageFile,
+    '--rc',
+    'lcov_branch_coverage=1'
   ], options);
 
   const lines = output
     .trim()
-    .split(/\r?\n/);
+    .split(/\r?\n/)
 
   lines.shift(); // Removes "Reading tracefile..."
 
   return lines.join('\n');
 }
 
-async function detail(coverageFile, pull_request, octokit, workingDirectory) {
+async function detail(coverageFile, octokit) {
   let output = '';
 
   const options = {};
@@ -128,29 +195,29 @@ async function detail(coverageFile, pull_request, octokit, workingDirectory) {
     '--list',
     coverageFile,
     '--list-full-path',
+    '--rc',
+    'lcov_branch_coverage=1',
   ], options);
 
   let lines = output
     .trim()
-    .split(/\r?\n/);
+    .split(/\r?\n/)
 
   lines.shift(); // Removes "Reading tracefile..."
   lines.pop(); // Removes "Total..."
   lines.pop(); // Removes "========"
+
   const listFilesOptions = octokit
-    .pulls.listFiles.endpoint.merge({
-      pull_number: pull_request.number,
-      ...ownerRepo(pull_request.url)
+    .rest.pulls.listFiles.endpoint.merge({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      pull_number: github.context.payload.pull_request.number,
     });
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
 
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header
-
-    if (workingDirectory !== "./") {
-        line = workingDirectory + line;
-    }
 
     for (const changedFile of changedFiles) {
       console.log(`${line} === ${changedFile}`);
@@ -166,73 +233,6 @@ async function detail(coverageFile, pull_request, octokit, workingDirectory) {
   }
 
   return '\n  ' + lines.join('\n  ');
-}
-
-async function run() {
-  try {
-    await exec.exec('sudo apt-get install -y lcov');
-
-    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const workingDirectory = ensureTrailingSlash(core.getInput('working-directory').trim() || './');
-    const coverageFilesPattern = core.getInput('coverage-files');
-    const globber = await glob.create(coverageFilesPattern);
-    const coverageFiles = await globber.glob();
-
-    await genhtml(coverageFiles, tmpPath, workingDirectory);
-
-    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
-    const totalCoverage = lcovTotal(coverageFile);
-    const minimumCoverage = core.getInput('minimum-coverage');
-    const gitHubToken = core.getInput('github-token').trim();
-    const errorMessage = `The code coverage is too low. Expected at least ${minimumCoverage}.`;
-    const isFailure = totalCoverage < minimumCoverage;
-
-    if (gitHubToken !== '') {
-      const octokit = await github.getOctokit(gitHubToken);
-      const prs = pullRequests(github);
-      for (let i=0; i < prs.length; i++) {
-        const pr = prs[i];
-        console.log(`Calculating coverage for PR ${pr.number}, sha ${pr.head.sha}...`);
-        const summary = await summarize(coverageFile);
-        const details = await detail(coverageFile, pr, octokit, workingDirectory);
-        const shaShort = pr.head.sha.substr(0, 7);
-        let body = `### Coverage of commit [<code>${shaShort}</code>](${pr.number}/commits/${pr.head.sha})
-<pre>${summary}
-
-Files changed coverage rate:${details}</pre>
-
-[Download coverage report](../actions/runs/${github.context.runId})
-`;
-
-        if (isFailure) {
-          body += `\n:no_entry: ${errorMessage}`;
-        }
-
-        console.log("Posting body:");
-        console.log(body);
-
-        try {
-          await octokit.issues.createComment({
-            issue_number: pr.number,
-            body: body,
-            ...ownerRepo(pr.url)
-          });
-        } catch (error) {
-          console.log("Unable to post coverage report.");
-          console.log(error);
-        }
-      }
-    } else {
-      console.log("No GITHUB_TOKEN, not posting.");
-    }
-
-    if (isFailure) {
-      throw Error(errorMessage);
-    }
-  } catch (error) {
-    console.error(error);
-    core.setFailed(error.message);
-  }
 }
 
 run();

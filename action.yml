@@ -8,8 +8,7 @@ inputs:
     description: 'The coverage files to scan. For example, `coverage/lcov.*.info`'
     required: true
   artifact-name:
-    description: 'The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory'
-    required: true
+    description: 'The GitHub artifact name of the generated HTML report. For example, `code-coverage-report`. _Note:_ When downloading, it will be extracted in an `html` directory. Optional. Default: `` (Skips uploading of artifacts)'
   minimum-coverage:
     description: 'The minimum coverage to pass the check. Optional. Default: `0` (always passes)'
     default: 0
@@ -17,8 +16,22 @@ inputs:
     description: 'Set the GitHub token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``'
   working-directory:
     description: 'The working directory containing the source files referenced in the LCOV files. Optional. Default: `./`'
+  title-prefix:
+    description: 'A prefix before the title "LCOV of commit...". Optional. Default: ``'
+    required: false
+  additional-message:
+    description: 'Custom text appended to the code coverage comment in the pull request. Optional. Default: ``'
+    required: false
+  update-comment:
+    description: 'Set to `true` to update the previous code coverage comment if such exists. When set to `false`, a new comment is always created. Optional. Default: `false`'
+    required: false
+    default: "false"
+outputs:
+  total-coverage:
+      description: 'The total coverage from scanned files.'
+
 runs:
-  using: 'node12'
+  using: 'node20'
   main: 'dist/main/index.js'
   post: 'dist/post/index.js'
 branding:
