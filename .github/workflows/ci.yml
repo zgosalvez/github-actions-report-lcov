@@ -13,7 +13,7 @@ jobs:
     - name: Clone the repository
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@6ae615f6475d2ede5ad88bea6baa7a1d5e93ffaa
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@c3a2b64f69b7a1542a68f44d9edbd9ec3fc1455e
 
   build_test:
     name: Build & Test
@@ -28,7 +28,7 @@ jobs:
       id: get-runs-using-version
       uses: zgosalvez/github-actions-get-action-runs-using-version@a2a6bfee23ba3314418fed5e8d0ca3367d7fed44
     - name: Set up Node
-      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+      uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
       with:
         node-version: v${{ steps.get-runs-using-version.outputs.version }}
     - name: Cache Node Packages
@@ -46,6 +46,6 @@ jobs:
       run: npm run lint
     - name: Prepare
       run: npm run prepare
-    - uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842
+    - uses: stefanzweifel/git-auto-commit-action@e348103e9026cc0eee72ae06630dbe30c8bf7a79
       with:
         commit_message: Apply `npm run prepare` changes
