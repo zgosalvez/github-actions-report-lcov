@@ -23,9 +23,14 @@ async function run() {
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
 
-    await genhtml(coverageFiles, tmpPath);
+    const lcovVersion = await getLcovVersion();
+    core.debug(`LCOV version: ${lcovVersion}`);
+    const branchCoverageOption = compareVersions(lcovVersion, '2.0.0') >= 0 ? 'branch_coverage=1' : 'lcov_branch_coverage=1';
+    core.debug(`Branch coverage option: ${branchCoverageOption}`);
 
-    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    await genhtml(coverageFiles, tmpPath, branchCoverageOption);
+
+    const coverageFile = await mergeCoverages(coverageFiles, tmpPath, branchCoverageOption);
     core.debug(`Merged coverage file: ${coverageFile}`);
     const totalCoverage = lcovTotal(coverageFile);
     core.debug(`Total coverage: ${totalCoverage}`);
@@ -39,8 +44,8 @@ async function run() {
 
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
-      const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
+      const summary = await summarize(coverageFile, branchCoverageOption);
+      const details = await detail(coverageFile, octokit, branchCoverageOption);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -109,11 +114,11 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   }
 }
 
-async function genhtml(coverageFiles, tmpPath) {
+async function genhtml(coverageFiles, tmpPath, branchCoverageOption) {
   const workingDirectory = core.getInput('working-directory').trim() || './';
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
+  const args = [...coverageFiles, '--rc', branchCoverageOption];
 
   args.push('--output-directory');
   args.push(artifactPath);
@@ -135,7 +140,7 @@ async function genhtml(coverageFiles, tmpPath) {
   }
 }
 
-async function mergeCoverages(coverageFiles, tmpPath) {
+async function mergeCoverages(coverageFiles, tmpPath, branchCoverageOption) {
   const mergedCoverageFile = tmpPath + '/lcov.info';
   const args = [];
 
@@ -149,12 +154,12 @@ async function mergeCoverages(coverageFiles, tmpPath) {
 
   core.debug(`Running lcov with args: ${args.join(' ')}`);
 
-  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
+  await exec.exec('lcov', [...args, '--rc', branchCoverageOption]);
 
   return mergedCoverageFile;
 }
 
-async function summarize(coverageFile) {
+async function summarize(coverageFile, branchCoverageOption) {
   let output = '';
 
   const options = {};
@@ -173,7 +178,7 @@ async function summarize(coverageFile) {
     '--summary',
     coverageFile,
     '--rc',
-    'lcov_branch_coverage=1'
+    branchCoverageOption
   ], options);
 
   const lines = output
@@ -185,7 +190,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, octokit, branchCoverageOption) {
   let output = '';
 
   const options = {};
@@ -205,7 +210,7 @@ async function detail(coverageFile, octokit) {
     coverageFile,
     '--list-full-path',
     '--rc',
-    'lcov_branch_coverage=1',
+    branchCoverageOption,
   ], options);
 
   let lines = output
@@ -242,6 +247,50 @@ async function detail(coverageFile, octokit) {
   }
 
   return '\n  ' + lines.join('\n  ');
+}
+
+async function getLcovVersion() {
+  let output = '';
+
+  const options = {};
+  options.listeners = {
+    stdout: (data) => {
+      output += data.toString();
+    },
+    stderr: (data) => {
+      output += data.toString();
+    }
+  };
+
+  core.debug('Running lcov --version');
+
+  await exec.exec('lcov', ['--version'], options);
+
+  core.debug(`LCOV version output: ${output}`);
+
+  const match = output.match(/lcov: LCOV version (\d+\.\d+)(?:-(\d+))?/);
+  let version = '0.0-0';
+  if (match) {
+    version = match[2] ? `${match[1]}-${match[2]}` : `${match[1]}-0`;
+  }
+  core.debug(`Parsed LCOV version: ${version}`);
+  return version;
+}
+
+function compareVersions(v1, v2) {
+  core.debug(`Comparing versions: ${v1} and ${v2}`);
+  const v1Parts = v1.split(/[-.]/).map(Number);
+  const v2Parts = v2.split(/[-.]/).map(Number);
+
+  for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+    const v1Part = v1Parts[i] || 0;
+    const v2Part = v2Parts[i] || 0;
+
+    if (v1Part > v2Part) return 1;
+    if (v1Part < v2Part) return -1;
+  }
+
+  return 0;
 }
 
 run();
