@@ -11,10 +11,14 @@ const events = ['pull_request', 'pull_request_target'];
 
 async function run() {
   try {
+    core.debug('Starting the action');
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    core.debug(`Temporary path: ${tmpPath}`);
     const coverageFilesPattern = core.getInput('coverage-files');
+    core.debug(`Coverage files pattern: ${coverageFilesPattern}`);
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
+    core.debug(`Coverage files: ${coverageFiles}`);
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
@@ -22,7 +26,9 @@ async function run() {
     await genhtml(coverageFiles, tmpPath);
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    core.debug(`Merged coverage file: ${coverageFile}`);
     const totalCoverage = lcovTotal(coverageFile);
+    core.debug(`Total coverage: ${totalCoverage}`);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
     const errorMessage = `The code coverage is too low: ${totalCoverage}. Expected at least ${minimumCoverage}.`;
@@ -43,6 +49,8 @@ async function run() {
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
       }
+
+      core.debug(`Comment body: ${body}`);
 
       updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
     } else if (!hasGithubToken) {
@@ -110,6 +118,8 @@ async function genhtml(coverageFiles, tmpPath) {
   args.push('--output-directory');
   args.push(artifactPath);
 
+  core.debug(`Running genhtml with args: ${args.join(' ')}`);
+
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
   if (artifactName !== '') {
@@ -119,20 +129,13 @@ async function genhtml(coverageFiles, tmpPath) {
 
     core.info(`Uploading artifacts.`);
 
-    await artifact
-      .uploadArtifact(
-        artifactName,
-        htmlFiles,
-        artifactPath,
-      );
+    await artifact.uploadArtifact(artifactName, htmlFiles, artifactPath);
   } else {
     core.info("Skip uploading artifacts");
   }
 }
 
 async function mergeCoverages(coverageFiles, tmpPath) {
-  // This is broken for some reason:
-  //const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
   const mergedCoverageFile = tmpPath + '/lcov.info';
   const args = [];
 
@@ -143,6 +146,8 @@ async function mergeCoverages(coverageFiles, tmpPath) {
 
   args.push('--output-file');
   args.push(mergedCoverageFile);
+
+  core.debug(`Running lcov with args: ${args.join(' ')}`);
 
   await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
 
@@ -161,6 +166,8 @@ async function summarize(coverageFile) {
       output += data.toString();
     }
   };
+
+  core.debug(`Running lcov --summary with coverage file: ${coverageFile}`);
 
   await exec.exec('lcov', [
     '--summary',
@@ -190,6 +197,8 @@ async function detail(coverageFile, octokit) {
       output += data.toString();
     }
   };
+
+  core.debug(`Running lcov --list with coverage file: ${coverageFile}`);
 
   await exec.exec('lcov', [
     '--list',
