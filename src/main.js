@@ -11,6 +11,10 @@ const events = ['pull_request', 'pull_request_target'];
 
 async function run() {
   try {
+    const workingDirectory = core.getInput('working-directory').trim() || './';
+    core.info(`Changing working directory to: ${workingDirectory}`);
+    process.chdir(workingDirectory);
+
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
@@ -18,11 +22,16 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
-    const workingDirectory = core.getInput('working-directory').trim() || './';
 
-    await genhtml(coverageFiles, tmpPath, workingDirectory);
+    core.info(`Coverage files found: ${coverageFiles.join(', ')}`);
 
-    const coverageFile = await mergeCoverages(coverageFiles, tmpPath, workingDirectory);
+    if (coverageFiles.length === 0) {
+      throw new Error('No coverage files found.');
+    }
+
+    await genhtml(coverageFiles, tmpPath);
+
+    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
@@ -35,7 +44,7 @@ async function run() {
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit, workingDirectory);
+      const details = await detail(coverageFile, octokit);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -102,7 +111,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   }
 }
 
-async function genhtml(coverageFiles, tmpPath, workingDirectory) {
+async function genhtml(coverageFiles, tmpPath) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
@@ -110,7 +119,7 @@ async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   args.push('--output-directory');
   args.push(artifactPath);
 
-  await exec.exec('genhtml', args, { cwd: workingDirectory });
+  await exec.exec('genhtml', args);
 
   if (artifactName !== '') {
     const artifact = new DefaultArtifactClient();
@@ -130,7 +139,7 @@ async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   }
 }
 
-async function mergeCoverages(coverageFiles, tmpPath, workingDirectory) {
+async function mergeCoverages(coverageFiles, tmpPath) {
   // This is broken for some reason:
   //const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
   const mergedCoverageFile = tmpPath + '/lcov.info';
@@ -144,7 +153,7 @@ async function mergeCoverages(coverageFiles, tmpPath, workingDirectory) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1'], { cwd: workingDirectory });
+  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
 
   return mergedCoverageFile;
 }
@@ -178,7 +187,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit, workingDirectory) {
+async function detail(coverageFile, octokit) {
   let output = '';
 
   const options = {};
@@ -220,8 +229,8 @@ async function detail(coverageFile, octokit, workingDirectory) {
     if (index <= 2) return true; // Include header
 
     for (const changedFile of changedFiles) {
-      const trimmedChangedFile = path.relative(workingDirectory, changedFile);
-      console.log(`${line} === ${trimmedChangedFile}`);
+      const trimmedChangedFile = path.relative('.', changedFile);
+      core.debug(`Comparing line: ${line} with trimmedChangedFile: ${trimmedChangedFile}`);
 
       if (line.startsWith(trimmedChangedFile)) return true;
     }
