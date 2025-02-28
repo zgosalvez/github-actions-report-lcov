@@ -18,10 +18,11 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
+    const workingDirectory = core.getInput('working-directory').trim() || './';
 
-    await genhtml(coverageFiles, tmpPath);
+    await genhtml(coverageFiles, tmpPath, workingDirectory);
 
-    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    const coverageFile = await mergeCoverages(coverageFiles, tmpPath, workingDirectory);
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
@@ -34,7 +35,7 @@ async function run() {
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
+      const details = await detail(coverageFile, octokit, workingDirectory);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -101,8 +102,7 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
   }
 }
 
-async function genhtml(coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory').trim() || './';
+async function genhtml(coverageFiles, tmpPath, workingDirectory) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
@@ -130,7 +130,7 @@ async function genhtml(coverageFiles, tmpPath) {
   }
 }
 
-async function mergeCoverages(coverageFiles, tmpPath) {
+async function mergeCoverages(coverageFiles, tmpPath, workingDirectory) {
   // This is broken for some reason:
   //const mergedCoverageFile = path.resolve(tmpPath, 'lcov.info');
   const mergedCoverageFile = tmpPath + '/lcov.info';
@@ -144,7 +144,7 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
+  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1'], { cwd: workingDirectory });
 
   return mergedCoverageFile;
 }
@@ -178,7 +178,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, octokit, workingDirectory) {
   let output = '';
 
   const options = {};
@@ -220,9 +220,10 @@ async function detail(coverageFile, octokit) {
     if (index <= 2) return true; // Include header
 
     for (const changedFile of changedFiles) {
-      console.log(`${line} === ${changedFile}`);
+      const trimmedChangedFile = path.relative(workingDirectory, changedFile);
+      console.log(`${line} === ${trimmedChangedFile}`);
 
-      if (line.startsWith(changedFile)) return true;
+      if (line.startsWith(trimmedChangedFile)) return true;
     }
 
     return false;
