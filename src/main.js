@@ -187,6 +187,12 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
+function filterChangedFiles(changedFiles, workingDirectory) {
+  return changedFiles
+    .filter(file => path.resolve(file).startsWith(path.resolve(workingDirectory)))
+    .map(file => path.relative(workingDirectory, path.resolve(file)));
+}
+
 async function detail(coverageFile, octokit, workingDirectory) {
   let output = '';
 
@@ -227,9 +233,7 @@ async function detail(coverageFile, octokit, workingDirectory) {
 
   core.debug(`Changed files: ${changedFiles.join(', ')}`);
 
-  const filteredChangedFiles = changedFiles
-    .filter(file => file.startsWith(workingDirectory))
-    .map(file => path.relative(workingDirectory, file));
+  const filteredChangedFiles = filterChangedFiles(changedFiles, workingDirectory);
 
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header
