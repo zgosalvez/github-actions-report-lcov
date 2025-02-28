@@ -44,7 +44,7 @@ async function run() {
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
+      const details = await detail(coverageFile, octokit, workingDirectory);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -187,7 +187,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, octokit, workingDirectory) {
   let output = '';
 
   const options = {};
@@ -227,14 +227,17 @@ async function detail(coverageFile, octokit) {
 
   core.debug(`Changed files: ${changedFiles.join(', ')}`);
 
+  const filteredChangedFiles = changedFiles
+    .filter(file => file.startsWith(workingDirectory))
+    .map(file => path.relative(workingDirectory, file));
+
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header
 
-    for (const changedFile of changedFiles) {
-      const trimmedChangedFile = path.relative('.', changedFile);
-      core.debug(`Comparing line: ${line} with trimmedChangedFile: ${trimmedChangedFile}`);
+    for (const changedFile of filteredChangedFiles) {
+      core.debug(`Comparing line: ${line} with changedFile: ${changedFile}`);
 
-      if (line.startsWith(trimmedChangedFile)) return true;
+      if (line.startsWith(changedFile)) return true;
     }
 
     return false;
