@@ -12,9 +12,6 @@ const events = ['pull_request', 'pull_request_target'];
 async function run() {
   try {
     const workingDirectory = core.getInput('working-directory').trim() || './';
-    core.info(`Changing working directory to: ${workingDirectory}`);
-    process.chdir(workingDirectory);
-
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
@@ -22,6 +19,10 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
+
+    // Change working directory
+    core.info(`Changing working directory to: ${workingDirectory}`);
+    process.chdir(workingDirectory);
 
     core.info(`Coverage files found: ${coverageFiles.join(', ')}`);
 
