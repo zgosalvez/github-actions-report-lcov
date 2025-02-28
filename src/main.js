@@ -16,7 +16,7 @@ async function run() {
     process.chdir(workingDirectory);
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const coverageFilesPattern = core.getInput('coverage-files');
+    const coverageFilesPattern = path.join(workingDirectory, core.getInput('coverage-files'));
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
     const titlePrefix = core.getInput('title-prefix');
@@ -224,6 +224,8 @@ async function detail(coverageFile, octokit) {
     });
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
+
+  core.debug(`Changed files: ${changedFiles.join(', ')}`);
 
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header
