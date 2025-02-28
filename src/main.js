@@ -16,7 +16,7 @@ async function run() {
     process.chdir(workingDirectory);
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
-    const coverageFilesPattern = path.join(workingDirectory, core.getInput('coverage-files'));
+    const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
     const titlePrefix = core.getInput('title-prefix');
