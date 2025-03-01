@@ -26,7 +26,7 @@ jobs:
         ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
     - name: Get runs.using version
       id: get-runs-using-version
-      uses: zgosalvez/github-actions-get-action-runs-using-version@a2a6bfee23ba3314418fed5e8d0ca3367d7fed44
+      uses: zgosalvez/github-actions-get-action-runs-using-version@f3493d1f86a704e7d55716321c448b9eb3de2849
     - name: Set up Node
       uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
       with:
