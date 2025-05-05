@@ -11,6 +11,7 @@ const events = ['pull_request', 'pull_request_target'];
 
 async function run() {
   try {
+    const workingDirectory = core.getInput('working-directory').trim() || './';
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
@@ -18,6 +19,16 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
+
+    // Change working directory
+    core.info(`Changing working directory to: ${workingDirectory}`);
+    process.chdir(workingDirectory);
+
+    core.info(`Coverage files found: ${coverageFiles.join(', ')}`);
+
+    if (coverageFiles.length === 0) {
+      throw new Error('No coverage files found.');
+    }
 
     await genhtml(coverageFiles, tmpPath);
 
@@ -34,7 +45,7 @@ async function run() {
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
+      const details = await detail(coverageFile, octokit, workingDirectory);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -102,7 +113,6 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
 }
 
 async function genhtml(coverageFiles, tmpPath) {
-  const workingDirectory = core.getInput('working-directory').trim() || './';
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
@@ -110,7 +120,7 @@ async function genhtml(coverageFiles, tmpPath) {
   args.push('--output-directory');
   args.push(artifactPath);
 
-  await exec.exec('genhtml', args, { cwd: workingDirectory });
+  await exec.exec('genhtml', args);
 
   if (artifactName !== '') {
     const artifact = new DefaultArtifactClient();
@@ -178,7 +188,13 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+function filterChangedFiles(changedFiles, workingDirectory) {
+  return changedFiles
+    .filter(file => path.resolve(file).startsWith(path.resolve(workingDirectory)))
+    .map(file => path.relative(workingDirectory, path.resolve(file)));
+}
+
+async function detail(coverageFile, octokit, workingDirectory) {
   let output = '';
 
   const options = {};
@@ -216,11 +232,15 @@ async function detail(coverageFile, octokit) {
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
 
+  core.debug(`Changed files: ${changedFiles.join(', ')}`);
+
+  const filteredChangedFiles = filterChangedFiles(changedFiles, workingDirectory);
+
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header
 
-    for (const changedFile of changedFiles) {
-      console.log(`${line} === ${changedFile}`);
+    for (const changedFile of filteredChangedFiles) {
+      core.debug(`Comparing line: ${line} with changedFile: ${changedFile}`);
 
       if (line.startsWith(changedFile)) return true;
     }
