@@ -29,7 +29,7 @@
     "npm": "^11.6.1"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.38.3",
+    "@vercel/ncc": "^0.38.4",
     "eslint": "^9.36.0"
   }
 }
