@@ -112,6 +112,13 @@ async function genhtml(coverageFiles, tmpPath) {
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
 
+	const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+
+	if (ignoreErrors != '') {
+		args.push('--ignore-errors');
+		args.push(ignoreErrors);
+	}
+
   args.push('--output-directory');
   args.push(artifactPath);
 
@@ -148,6 +155,13 @@ async function mergeCoverages(coverageFiles, tmpPath) {
 
   args.push('--output-file');
   args.push(mergedCoverageFile);
+
+	const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+
+	if (ignoreErrors != '') {
+		args.push('--ignore-errors');
+		args.push(ignoreErrors);
+	}
 
   await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
 
