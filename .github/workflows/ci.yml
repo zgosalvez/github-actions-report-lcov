@@ -13,7 +13,7 @@ jobs:
     - name: Clone the repository
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@6ae615f6475d2ede5ad88bea6baa7a1d5e93ffaa
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@4830be28ce81da52ec70d65c552a7403821d98d4
 
   build_test:
     name: Build & Test
@@ -26,14 +26,14 @@ jobs:
         ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
     - name: Get runs.using version
       id: get-runs-using-version
-      uses: zgosalvez/github-actions-get-action-runs-using-version@981210d5388c2c51114d5ff707dd11dfe846c32c
+      uses: zgosalvez/github-actions-get-action-runs-using-version@77c146dfa17ea910866ad1a52d4bafae806668f8
     - name: Set up Node
-      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
         node-version: v${{ steps.get-runs-using-version.outputs.version }}
     - name: Cache Node Packages
       id: node-cache
-      uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
       with:
         path: ~/.npm
         key: node-cache-${{ steps.get-runs-using-version.outputs.prop }}-${{ hashFiles('**/package-lock.json') }}
@@ -46,6 +46,6 @@ jobs:
       run: npm run lint
     - name: Prepare
       run: npm run prepare
-    - uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842
+    - uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403
       with:
         commit_message: Apply `npm run prepare` changes
