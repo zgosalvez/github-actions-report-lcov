@@ -23,6 +23,7 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 
 ### Outputs
 - `total-coverage`: The total coverage from scanned files.
+- `artifact-id`: The GitHub artifact id for the generated HTML report.
 
 Sample comment:
 ![Screenshot](assets/comment.png)
