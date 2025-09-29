@@ -58,7 +58,7 @@ async function run() {
     }
 
     core.setOutput("total-coverage", totalCoverage);
-    core.setOutput('artifact-id', artifact.id);
+    core.setOutput('artifact-id', artifact ? artifact.id : null);
 
     if (!isMinimumCoverageReached) {
       throw Error(errorMessage);
