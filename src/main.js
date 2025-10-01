@@ -46,6 +46,8 @@ async function run() {
       
       if (artifact) {
         body += `\n[Full coverage report](../actions/runs/${github.context.runId}/artifacts/${artifact.id})`;
+
+        core.setOutput('artifact-id', artifact.id);
       }
 
       updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
@@ -58,7 +60,6 @@ async function run() {
     }
 
     core.setOutput("total-coverage", totalCoverage);
-    core.setOutput('artifact-id', artifact ? artifact.id : null);
 
     if (!isMinimumCoverageReached) {
       throw Error(errorMessage);
