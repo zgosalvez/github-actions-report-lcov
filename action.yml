@@ -32,6 +32,8 @@ inputs:
 outputs:
   total-coverage:
       description: 'The total coverage from scanned files.'
+  artifact-id:
+      description: 'The GitHub artifact id for the generated HTML report.'
 
 runs:
   using: 'node24'

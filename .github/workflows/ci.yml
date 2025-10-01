@@ -24,6 +24,7 @@ jobs:
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: Get runs.using version
       id: get-runs-using-version
       uses: zgosalvez/github-actions-get-action-runs-using-version@0a8dcac2c28bdcbfcbdca07d46bae8eab7930dc2
