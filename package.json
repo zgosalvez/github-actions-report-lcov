@@ -26,10 +26,10 @@
     "@actions/io": "^2.0.0",
     "install": "^0.13.0",
     "lcov-total": "^1.0.7",
-    "npm": "^11.6.1"
+    "npm": "^11.7.0"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.4",
-    "eslint": "^9.36.0"
+    "eslint": "^9.39.0"
   }
 }
