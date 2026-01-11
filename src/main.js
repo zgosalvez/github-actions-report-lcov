@@ -45,7 +45,7 @@ async function run() {
       }
 
       if (artifact) {
-         body += `\n[Full coverage report](../actions/runs/${github.context.runId}/artifacts/${artifact.id})`;
+        body += `\n[Full coverage report](../actions/runs/${github.context.runId}/artifacts/${artifact.id})`;
 
         core.setOutput('artifact-id', artifact.id);
       }
@@ -112,7 +112,7 @@ async function genhtml(coverageFiles, tmpPath) {
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'branch_coverage=1'];
-
+  
   const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
 
 	if (ignoreErrors != '') {
@@ -156,6 +156,13 @@ async function mergeCoverages(coverageFiles, tmpPath) {
 
   args.push('--output-file');
   args.push(mergedCoverageFile);
+
+  const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+
+	if (ignoreErrors != '') {
+		args.push('--ignore-errors');
+		args.push(ignoreErrors);
+	}
 
   await exec.exec('lcov', [...args, '--rc', 'branch_coverage=1']);
 
