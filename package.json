@@ -18,7 +18,7 @@
   "author": "Zennon Gosalvez",
   "license": "MIT",
   "dependencies": {
-    "@actions/artifact": "^5.0.1",
+    "@actions/artifact": "^5.0.2",
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.1",
@@ -30,6 +30,6 @@
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.4",
-    "eslint": "^9.39.0"
+    "eslint": "^9.39.2"
   }
 }
