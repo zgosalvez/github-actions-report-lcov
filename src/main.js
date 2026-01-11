@@ -43,7 +43,7 @@ async function run() {
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
       }
-      
+
       if (artifact) {
         body += `\n[Full coverage report](../actions/runs/${github.context.runId}/artifacts/${artifact.id})`;
 
@@ -111,14 +111,14 @@ async function genhtml(coverageFiles, tmpPath) {
   const workingDirectory = core.getInput('working-directory').trim() || './';
   const artifactName = core.getInput('artifact-name').trim();
   const artifactPath = path.resolve(tmpPath, 'html').trim();
-  const args = [...coverageFiles, '--rc', 'lcov_branch_coverage=1'];
+  const args = [...coverageFiles, '--rc', 'branch_coverage=1'];
 
-	const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+  const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
 
-	if (ignoreErrors != '') {
-		args.push('--ignore-errors');
-		args.push(ignoreErrors);
-	}
+  if (ignoreErrors != '') {
+    args.push('--ignore-errors');
+    args.push(ignoreErrors);
+  }
 
   args.push('--output-directory');
   args.push(artifactPath);
@@ -157,14 +157,14 @@ async function mergeCoverages(coverageFiles, tmpPath) {
   args.push('--output-file');
   args.push(mergedCoverageFile);
 
-	const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+  const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
 
-	if (ignoreErrors != '') {
-		args.push('--ignore-errors');
-		args.push(ignoreErrors);
-	}
+  if (ignoreErrors != '') {
+    args.push('--ignore-errors');
+    args.push(ignoreErrors);
+  }
 
-  await exec.exec('lcov', [...args, '--rc', 'lcov_branch_coverage=1']);
+  await exec.exec('lcov', [...args, '--rc', 'branch_coverage=1']);
 
   return mergedCoverageFile;
 }
@@ -186,7 +186,7 @@ async function summarize(coverageFile) {
     '--summary',
     coverageFile,
     '--rc',
-    'lcov_branch_coverage=1'
+    'branch_coverage=1'
   ];
 
   const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
@@ -225,7 +225,7 @@ async function detail(coverageFile, octokit) {
     coverageFile,
     '--list-full-path',
     '--rc',
-    'lcov_branch_coverage=1',
+    'branch_coverage=1',
   ];
 
   const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
