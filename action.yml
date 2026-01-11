@@ -12,6 +12,9 @@ inputs:
   minimum-coverage:
     description: 'The minimum coverage to pass the check. Optional. Default: `0` (always passes)'
     default: 0
+  genhtml-ignore-errors:
+    description: errors genhtml should ignore. See https://man.archlinux.org/man/genhtml.1.en for more information
+    default:
   github-token:
     description: 'Set the GitHub token to have the action comment the coverage summary in the pull request. This token is provided by Actions, you do not need to create your own token. Optional. Default: ``'
   working-directory:
@@ -29,9 +32,11 @@ inputs:
 outputs:
   total-coverage:
       description: 'The total coverage from scanned files.'
+  artifact-id:
+      description: 'The GitHub artifact id for the generated HTML report.'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/main/index.js'
   post: 'dist/post/index.js'
 branding:
