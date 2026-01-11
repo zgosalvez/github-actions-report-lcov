@@ -19,7 +19,7 @@ async function run() {
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
 
-    await genhtml(coverageFiles, tmpPath);
+    const artifact = await genhtml(coverageFiles, tmpPath);
 
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
@@ -42,6 +42,12 @@ async function run() {
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
+      }
+
+      if (artifact) {
+         body += `\n[Full coverage report](../actions/runs/${github.context.runId}/artifacts/${artifact.id})`;
+
+        core.setOutput('artifact-id', artifact.id);
       }
 
       updateComment ? await upsertComment(body, commentHeaderPrefix, octokit) : await createComment(body, octokit);
@@ -107,6 +113,13 @@ async function genhtml(coverageFiles, tmpPath) {
   const artifactPath = path.resolve(tmpPath, 'html').trim();
   const args = [...coverageFiles, '--rc', 'branch_coverage=1'];
 
+  const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+
+	if (ignoreErrors != '') {
+		args.push('--ignore-errors');
+		args.push(ignoreErrors);
+	}
+
   args.push('--output-directory');
   args.push(artifactPath);
 
@@ -119,7 +132,7 @@ async function genhtml(coverageFiles, tmpPath) {
 
     core.info(`Uploading artifacts.`);
 
-    await artifact
+    return await artifact
       .uploadArtifact(
         artifactName,
         htmlFiles,
