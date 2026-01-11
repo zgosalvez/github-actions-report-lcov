@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clone the repository
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@9e9574ef04ea69da568d6249bd69539ccc704e74
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@6124774845927d14c601359ab8138699fa5b70c3
 
   build_test:
     name: Build & Test
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clone the repository
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         ref: ${{ github.head_ref }} # https://github.com/stefanzweifel/git-auto-commit-action#checkout-the-correct-branch
         repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -29,7 +29,7 @@ jobs:
       id: get-runs-using-version
       uses: zgosalvez/github-actions-get-action-runs-using-version@0a8dcac2c28bdcbfcbdca07d46bae8eab7930dc2
     - name: Set up Node
-      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
       with:
         node-version: v${{ steps.get-runs-using-version.outputs.version }}
     - name: Cache Node Packages
