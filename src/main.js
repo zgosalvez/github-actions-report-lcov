@@ -162,12 +162,21 @@ async function summarize(coverageFile) {
     }
   };
 
-  await exec.exec('lcov', [
+  const args = [
     '--summary',
     coverageFile,
     '--rc',
     'branch_coverage=1'
-  ], options);
+  ];
+
+  const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+
+  if (ignoreErrors !== '') {
+    args.push('--ignore-errors');
+    args.push(ignoreErrors);
+  }
+
+  await exec.exec('lcov', args, options);
 
   const lines = output
     .trim()
@@ -191,13 +200,22 @@ async function detail(coverageFile, octokit) {
     }
   };
 
-  await exec.exec('lcov', [
+  const args = [
     '--list',
     coverageFile,
     '--list-full-path',
     '--rc',
     'branch_coverage=1',
-  ], options);
+  ];
+
+  const ignoreErrors = core.getInput('genhtml-ignore-errors', { required: false }).trim();
+
+  if (ignoreErrors !== '') {
+    args.push('--ignore-errors');
+    args.push(ignoreErrors);
+  }
+
+  await exec.exec('lcov', args, options);
 
   let lines = output
     .trim()
