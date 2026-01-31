@@ -48,5 +48,6 @@ jobs:
     - name: Prepare
       run: npm run prepare
     - uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3
+      if: github.event.pull_request.head.repo.full_name == github.repository
       with:
         commit_message: Apply `npm run prepare` changes
