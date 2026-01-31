@@ -1,7 +1,7 @@
 const {DefaultArtifactClient} = require('@actions/artifact');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
-const github = require('@actions/github');
+const {context, getOctokit} = require('@actions/github');
 const glob = require('@actions/glob');
 const lcovTotal = require("lcov-total");
 const os = require('os');
@@ -11,7 +11,7 @@ const events = ['pull_request', 'pull_request_target'];
 
 async function run() {
   try {
-    const tmpPath = path.resolve(os.tmpdir(), github.context.action);
+    const tmpPath = path.resolve(os.tmpdir(), context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
     const globber = await glob.create(coverageFilesPattern);
     const coverageFiles = await globber.glob();
@@ -29,23 +29,23 @@ async function run() {
     const isMinimumCoverageReached = totalCoverage >= minimumCoverage;
 
     const hasGithubToken = gitHubToken !== '';
-    const isPR = events.includes(github.context.eventName);
+    const isPR = events.includes(context.eventName);
 
     if (hasGithubToken && isPR) {
-      const octokit = await github.getOctokit(gitHubToken);
+      const octokit = getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit);
-      const sha = github.context.payload.pull_request.head.sha;
+      const sha = context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
+      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${context.payload.pull_request.number}/commits/${sha}) during [${context.workflow} #${context.runNumber}](../actions/runs/${context.runId})\n<pre>${summary}\n\nFiles changed coverage rate:${details}</pre>${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
       }
 
       if (artifact) {
-        body += `\n[Full coverage report](../actions/runs/${github.context.runId}/artifacts/${artifact.id})`;
+        body += `\n[Full coverage report](../actions/runs/${context.runId}/artifacts/${artifact.id})`;
 
         core.setOutput('artifact-id', artifact.id);
       }
@@ -56,7 +56,7 @@ async function run() {
       core.info("Note: This could happen even if github-token was provided in workflow file. It could be because your github token does not have permissions for commenting in target repo.")
     } else if (!isPR) {
       core.info("The event is not a pull request. Skipping writing a comment.");
-      core.info("The event type is: " + github.context.eventName);
+      core.info("The event type is: " + context.eventName);
     }
 
     core.setOutput("total-coverage", totalCoverage);
@@ -73,18 +73,18 @@ async function createComment(body, octokit) {
   core.debug("Creating a comment in the PR.")
 
   await octokit.rest.issues.createComment({
-    repo: github.context.repo.repo,
-    owner: github.context.repo.owner,
-    issue_number: github.context.payload.pull_request.number,
+    repo: context.repo.repo,
+    owner: context.repo.owner,
+    issue_number: context.payload.pull_request.number,
     body,
   });
 }
 
 async function upsertComment(body, commentHeaderPrefix, octokit) {
   const issueComments = await octokit.rest.issues.listComments({
-    repo: github.context.repo.repo,
-    owner: github.context.repo.owner,
-    issue_number: github.context.payload.pull_request.number,
+    repo: context.repo.repo,
+    owner: context.repo.owner,
+    issue_number: context.payload.pull_request.number,
   });
 
   const existingComment = issueComments.data.find(comment =>
@@ -95,8 +95,8 @@ async function upsertComment(body, commentHeaderPrefix, octokit) {
     core.debug(`Updating comment, id: ${existingComment.id}.`);
 
     await octokit.rest.issues.updateComment({
-      repo: github.context.repo.repo,
-      owner: github.context.repo.owner,
+      repo: context.repo.repo,
+      owner: context.repo.owner,
       comment_id: existingComment.id,
       body,
     });
@@ -247,9 +247,9 @@ async function detail(coverageFile, octokit) {
 
   const listFilesOptions = octokit
     .rest.pulls.listFiles.endpoint.merge({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      pull_number: github.context.payload.pull_request.number,
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      pull_number: context.payload.pull_request.number,
     });
   const listFilesResponse = await octokit.paginate(listFilesOptions);
   const changedFiles = listFilesResponse.map(file => file.filename);
