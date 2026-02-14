@@ -9,5 +9,7 @@ jobs:
   update-majorver:
     name: Update Major Version Tag
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: nowactions/update-majorver@f2014bbbba95b635e990ce512c5653bd0f4753fb
