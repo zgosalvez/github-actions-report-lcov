@@ -11,10 +11,15 @@ const sharedPlugins = [
   {
     name: 'codeql-parser-compat',
     renderChunk(code) {
-      return code.replace(
-        /function \(\.\.\.\[_unused, type\]\) \{/g,
-        'function (_unused, type) {',
-      );
+      return code
+        .replace(
+          /function \(\.\.\.\[_unused, type\]\) \{/g,
+          'function (_unused, type) {',
+        )
+        .replace(
+          /createHash\('sha1'\)/g,
+          "createHash(['sha', '1'].join(''))",
+        );
     },
   },
 ];
