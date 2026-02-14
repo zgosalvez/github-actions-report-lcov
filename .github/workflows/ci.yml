@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches:
@@ -19,6 +22,8 @@ jobs:
     name: Build & Test
     needs: security_hardening
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - name: Clone the repository
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
