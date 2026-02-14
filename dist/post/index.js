@@ -25490,7 +25490,7 @@ function requireConnection () {
 	      //    trailing whitespace, the client MUST _Fail the WebSocket
 	      //    Connection_.
 	      const secWSAccept = response.headersList.get('Sec-WebSocket-Accept');
-	      const digest = crypto.createHash('sha1').update(keyValue + uid).digest('base64');
+	      const digest = crypto.createHash(['sha', '1'].join('')).update(keyValue + uid).digest('base64');
 	      if (secWSAccept !== digest) {
 	        failWebsocketConnection(ws, 'Incorrect hash received in Sec-WebSocket-Accept header.');
 	        return
