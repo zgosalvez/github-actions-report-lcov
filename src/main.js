@@ -1,4 +1,3 @@
-const {DefaultArtifactClient} = require('@actions/artifact');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const github = require('@actions/github');
@@ -126,7 +125,7 @@ async function genhtml(coverageFiles, tmpPath) {
   await exec.exec('genhtml', args, { cwd: workingDirectory });
 
   if (artifactName !== '') {
-    const artifact = new DefaultArtifactClient();
+    const artifact = new (await import('@actions/artifact')).DefaultArtifactClient();
     const globber = await glob.create(`${artifactPath}/**/**.*`);
     const htmlFiles = await globber.glob();
 
