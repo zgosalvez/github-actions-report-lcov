@@ -7,7 +7,7 @@ let github;
 
 async function run() {
   try {
-    github = require('@actions/github');
+    github = await import('@actions/github');
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
 
     await io.rmRF(tmpPath);
