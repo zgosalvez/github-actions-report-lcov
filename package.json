@@ -5,7 +5,7 @@
   "main": "dist/main/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "ncc build src/main.js -o dist/main --source-map --license licenses.txt && ncc build src/post.js -o dist/post --source-map --license licenses.txt"
+    "prepare": "rm -rf dist/main dist/post && rollup -c"
   },
   "repository": {
     "type": "git",
@@ -29,7 +29,10 @@
     "npm": "^11.8.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.38.4",
-    "eslint": "^10.0.0"
+    "@rollup/plugin-commonjs": "^28.0.9",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "eslint": "^10.0.0",
+    "rollup": "^4.57.1"
   }
 }
