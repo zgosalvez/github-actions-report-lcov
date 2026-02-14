@@ -1,6 +1,4 @@
 const core = require('@actions/core');
-
-const glob = require('@actions/glob');
 const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
@@ -9,11 +7,13 @@ const events = ['pull_request', 'pull_request_target'];
 
 let exec;
 let github;
+let glob;
 
 async function run() {
   try {
     exec = await import('@actions/exec');
     github = await import('@actions/github');
+    glob = await import('@actions/glob');
 
     const tmpPath = path.resolve(os.tmpdir(), github.context.action);
     const coverageFilesPattern = core.getInput('coverage-files');
