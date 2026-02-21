@@ -5,7 +5,7 @@
   "main": "dist/main/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "rm -rf dist/main dist/post && rollup -c"
+    "prepare": "rm -rf dist && rollup -c"
   },
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
     "@actions/exec": "^3.0.0",
     "@actions/github": "^9.0.0",
     "@actions/glob": "^0.6.1",
-    "@actions/io": "^2.0.0",
+    "@actions/io": "^3.0.2",
     "install": "^0.13.0",
     "lcov-total": "^1.0.7",
     "npm": "^11.10.1"
