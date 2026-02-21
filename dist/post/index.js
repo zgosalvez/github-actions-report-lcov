@@ -11,6 +11,7 @@ var require$$4 = require('events');
 var require$$2 = require('child_process');
 var require$$5$1 = require('assert');
 var require$$6$1 = require('timers');
+var require$$1$4 = require('@actions/io');
 require('net');
 var require$$1$2 = require('tls');
 var require$$6 = require('util');
@@ -31156,7 +31157,7 @@ function requirePost () {
 	if (hasRequiredPost) return post$1;
 	hasRequiredPost = 1;
 	const core = requireCore();
-	const io = requireIo();
+	const io = require$$1$4;
 	const os = require$$0;
 	const path = require$$1$3;
 
