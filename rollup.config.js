@@ -11,7 +11,7 @@ const sharedPlugins = [
   {
     name: 'codeql-parser-compat',
     renderChunk(code) {
-      return code
+      const transformed = code
         .replace(
           /function \(\.\.\.\[_unused, type\]\) \{/g,
           'function (_unused, type) {',
@@ -20,6 +20,11 @@ const sharedPlugins = [
           /createHash\('sha1'\)/g,
           "createHash(['sha', '1'].join(''))",
         );
+
+      return transformed.replace(
+        /ent\.replace\(\/\[\.\\-\+\*:\]\/g,\s*'\\\\\.'\)/g,
+        () => "ent.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')",
+      );
     },
   },
 ];
