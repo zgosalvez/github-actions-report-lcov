@@ -25,8 +25,7 @@
     "@actions/glob": "^0.6.1",
     "@actions/io": "^3.0.2",
     "install": "^0.13.0",
-    "lcov-total": "^1.0.7",
-    "npm": "^11.10.1"
+    "lcov-total": "^1.0.7"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.0",
