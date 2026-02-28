@@ -22,8 +22,9 @@ const sharedPlugins = [
         );
 
       return transformed.replace(
-        /ent\.replace\(\/\[\.\\-\+\*:\]\/g,\s*'\\\\\.'\)/g,
-        () => "ent.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')",
+        /(ent|entityName)\.replace\(\/\[\.\\-\+\*:\]\/g,\s*'\\\\\.'\)/g,
+        (_match, variableName) =>
+          variableName + ".replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')",
       );
     },
   },
