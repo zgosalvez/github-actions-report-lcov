@@ -1,16 +1,17 @@
-const core = require('@actions/core');
 const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 
 const events = ['pull_request', 'pull_request_target'];
 
+let core;
 let exec;
 let github;
 let glob;
 
 async function run() {
   try {
+    core = await import('@actions/core');
     exec = await import('@actions/exec');
     github = await import('@actions/github');
     glob = await import('@actions/glob');
@@ -69,7 +70,12 @@ async function run() {
       throw Error(errorMessage);
     }
   } catch (error) {
-    core.setFailed(error.message);
+    if (core && typeof core.setFailed === 'function') {
+      core.setFailed(error.message);
+      return;
+    }
+
+    throw error;
   }
 }
 

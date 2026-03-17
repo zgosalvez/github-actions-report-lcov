@@ -1,12 +1,13 @@
-const core = require('@actions/core');
 const os = require('os');
 const path = require('path');
 
+let core;
 let github;
 let io;
 
 async function run() {
   try {
+    core = await import('@actions/core');
     github = await import('@actions/github');
     io = await import('@actions/io');
 
@@ -14,7 +15,12 @@ async function run() {
 
     await io.rmRF(tmpPath);
   } catch (error) {
-    core.setFailed(error.message);
+    if (core && typeof core.setFailed === 'function') {
+      core.setFailed(error.message);
+      return;
+    }
+
+    throw error;
   }
 }
 
