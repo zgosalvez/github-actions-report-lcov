@@ -5,7 +5,8 @@
   "main": "dist/main/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "rm -rf dist && rollup -c"
+    "prepare": "rm -rf dist && rollup -c",
+    "verify-dist": "node scripts/verify-dist-bundles.js"
   },
   "repository": {
     "type": "git",
