@@ -34,7 +34,7 @@ jobs:
       id: get-runs-using-version
       uses: zgosalvez/github-actions-get-action-runs-using-version@6ded6f570d3957576d469187e5c39d3dda7857ef
     - name: Set up Node
-      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
       with:
         node-version: v${{ steps.get-runs-using-version.outputs.version }}
     - name: Cache Node Packages
