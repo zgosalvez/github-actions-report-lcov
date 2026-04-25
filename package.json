@@ -22,7 +22,7 @@
     "@actions/artifact": "^6.2.1",
     "@actions/core": "^3.0.0",
     "@actions/exec": "^3.0.0",
-    "@actions/github": "^9.1.0",
+    "@actions/github": "^9.1.1",
     "@actions/glob": "^0.6.1",
     "@actions/io": "^3.0.2",
     "install": "^0.13.0",
