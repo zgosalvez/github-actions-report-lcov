@@ -39,7 +39,7 @@ jobs:
         node-version: v${{ steps.get-runs-using-version.outputs.version }}
     - name: Cache Node Packages
       id: node-cache
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
       with:
         path: ~/.npm
         key: node-cache-${{ steps.get-runs-using-version.outputs.prop }}-${{ hashFiles('**/package-lock.json') }}
