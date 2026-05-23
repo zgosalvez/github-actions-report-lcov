@@ -1,6 +1,7 @@
 const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
+const { normalizeCoverageFiles } = require('./lcov');
 
 const events = ['pull_request', 'pull_request_target'];
 
@@ -24,8 +25,17 @@ async function run() {
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
 
-    const artifact = await genhtml(coverageFiles, tmpPath);
+    const normalizedCoverage = await normalizeCoverageFiles(coverageFiles, tmpPath);
 
+    if (normalizedCoverage.fixedLines > 0) {
+      for (const file of normalizedCoverage.files) {
+        core.info(`Added missing LCOV line coverage for ${file.fixedLines} branch-only line(s) in ${file.coverageFile}.`);
+      }
+    }
+
+    const artifact = await genhtml(normalizedCoverage.coverageFiles, tmpPath);
+
+    // Keep coverage outputs based on the original tracefiles.
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');

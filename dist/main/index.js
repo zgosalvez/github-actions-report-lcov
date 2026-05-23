@@ -3,6 +3,7 @@
 var fs = require('fs');
 var os = require('os');
 var path$2 = require('path');
+var fs$1 = require('fs/promises');
 var assert$1 = require('assert');
 var crypto$1 = require('crypto');
 var require$$0$a = require('stream');
@@ -40,8 +41,7 @@ var https$1 = require('node:https');
 var require$$0$b = require('tty');
 var require$$5$4 = require('url');
 var node_crypto = require('node:crypto');
-var fs$1 = require('node:fs');
-var fs$2 = require('fs/promises');
+var fs$2 = require('node:fs');
 var require$$0$e = require('constants');
 var require$$1$6 = require('node:path');
 var require$$5$5 = require('node:fs/promises');
@@ -410,6 +410,232 @@ function requireSrc$1 () {
 	return src$1;
 }
 
+var lcov;
+var hasRequiredLcov;
+
+function requireLcov () {
+	if (hasRequiredLcov) return lcov;
+	hasRequiredLcov = 1;
+	const fs = fs$1;
+	const path = path$2;
+
+	function parsePositiveLineNumber(value) {
+	  if (!/^[1-9]\d*$/.test(value)) {
+	    return null;
+	  }
+
+	  return Number(value);
+	}
+
+	function parseLineCoverage(line) {
+	  if (!line.startsWith('DA:')) {
+	    return null;
+	  }
+
+	  const [lineNumber] = line.slice(3).split(',');
+
+	  return parsePositiveLineNumber(lineNumber);
+	}
+
+	function parseBranchCoverage(line) {
+	  if (!line.startsWith('BRDA:')) {
+	    return null;
+	  }
+
+	  const [lineNumber, , , taken] = line.slice(5).split(',');
+	  const parsedLineNumber = parsePositiveLineNumber(lineNumber);
+
+	  if (parsedLineNumber === null) {
+	    return null;
+	  }
+
+	  return {
+	    hit: Number(taken) > 0,
+	    lineNumber: parsedLineNumber,
+	  };
+	}
+
+	function addToSummary(line, prefix, count) {
+	  if (count === 0 || !line.startsWith(prefix)) {
+	    return line;
+	  }
+
+	  const value = line.slice(prefix.length);
+
+	  if (!/^\d+$/.test(value)) {
+	    return line;
+	  }
+
+	  return `${prefix}${Number(value) + count}`;
+	}
+
+	function normalizeRecord(recordLines) {
+	  const coveredLines = new Set();
+	  const branchOnlyLines = new Map();
+
+	  for (const line of recordLines) {
+	    const lineCoverageLineNumber = parseLineCoverage(line);
+
+	    if (lineCoverageLineNumber !== null) {
+	      coveredLines.add(lineCoverageLineNumber);
+	      continue;
+	    }
+
+	    const branchCoverage = parseBranchCoverage(line);
+
+	    if (branchCoverage !== null) {
+	      const existingHit = branchOnlyLines.get(branchCoverage.lineNumber) || false;
+
+	      branchOnlyLines.set(
+	        branchCoverage.lineNumber,
+	        existingHit || branchCoverage.hit,
+	      );
+	    }
+	  }
+
+	  for (const lineNumber of coveredLines) {
+	    branchOnlyLines.delete(lineNumber);
+	  }
+
+	  if (branchOnlyLines.size === 0) {
+	    return {
+	      fixedLines: 0,
+	      hitLines: 0,
+	      lines: recordLines,
+	    };
+	  }
+
+	  const generatedLines = new Set();
+	  const hitLines = [...branchOnlyLines.values()].filter(Boolean).length;
+	  const normalizedLines = [];
+
+	  for (const line of recordLines) {
+	    const branchCoverage = parseBranchCoverage(line);
+
+	    if (
+	      branchCoverage !== null &&
+	      branchOnlyLines.has(branchCoverage.lineNumber) &&
+	      !generatedLines.has(branchCoverage.lineNumber)
+	    ) {
+	      normalizedLines.push(
+	        `DA:${branchCoverage.lineNumber},${branchOnlyLines.get(branchCoverage.lineNumber) ? 1 : 0}`,
+	      );
+	      generatedLines.add(branchCoverage.lineNumber);
+	    }
+
+	    normalizedLines.push(
+	      addToSummary(
+	        addToSummary(line, 'LF:', branchOnlyLines.size),
+	        'LH:',
+	        hitLines,
+	      ),
+	    );
+	  }
+
+	  return {
+	    fixedLines: branchOnlyLines.size,
+	    hitLines,
+	    lines: normalizedLines,
+	  };
+	}
+
+	function normalizeLcovContent(content) {
+	  const lines = content.split(/\r?\n/);
+	  const normalizedLines = [];
+	  let recordLines = [];
+	  let fixedLines = 0;
+	  let hitLines = 0;
+
+	  function flushRecord() {
+	    const normalizedRecord = normalizeRecord(recordLines);
+
+	    normalizedLines.push(...normalizedRecord.lines);
+	    fixedLines += normalizedRecord.fixedLines;
+	    hitLines += normalizedRecord.hitLines;
+	    recordLines = [];
+	  }
+
+	  for (const line of lines) {
+	    if (line.startsWith('SF:')) {
+	      if (recordLines.length > 0) {
+	        flushRecord();
+	      }
+
+	      recordLines.push(line);
+	      continue;
+	    }
+
+	    if (recordLines.length > 0) {
+	      recordLines.push(line);
+
+	      if (line === 'end_of_record') {
+	        flushRecord();
+	      }
+
+	      continue;
+	    }
+
+	    normalizedLines.push(line);
+	  }
+
+	  if (recordLines.length > 0) {
+	    flushRecord();
+	  }
+
+	  return {
+	    content: normalizedLines.join('\n'),
+	    fixedLines,
+	    hitLines,
+	  };
+	}
+
+	async function normalizeCoverageFiles(coverageFiles, tmpPath) {
+	  const normalizedDir = path.resolve(tmpPath, 'normalized-lcov');
+	  const normalizedCoverageFiles = [];
+	  const files = [];
+	  let fixedLines = 0;
+
+	  await fs.mkdir(normalizedDir, { recursive: true });
+
+	  for (const [index, coverageFile] of coverageFiles.entries()) {
+	    const content = await fs.readFile(coverageFile, 'utf8');
+	    const normalized = normalizeLcovContent(content);
+
+	    fixedLines += normalized.fixedLines;
+
+	    if (normalized.fixedLines === 0) {
+	      normalizedCoverageFiles.push(coverageFile);
+	      continue;
+	    }
+
+	    const normalizedCoverageFile = path.join(
+	      normalizedDir,
+	      `${index}-${path.basename(coverageFile)}`,
+	    );
+
+	    await fs.writeFile(normalizedCoverageFile, normalized.content);
+	    normalizedCoverageFiles.push(normalizedCoverageFile);
+	    files.push({
+	      coverageFile,
+	      fixedLines: normalized.fixedLines,
+	      hitLines: normalized.hitLines,
+	    });
+	  }
+
+	  return {
+	    coverageFiles: normalizedCoverageFiles,
+	    files,
+	    fixedLines,
+	  };
+	}
+
+	lcov = {
+	  normalizeCoverageFiles,
+	  normalizeLcovContent,
+	};
+	return lcov;
+}
+
 var hasRequiredMain;
 
 function requireMain () {
@@ -418,6 +644,7 @@ function requireMain () {
 	const lcovTotal = requireSrc$1();
 	const os$1 = os;
 	const path = path$2;
+	const { normalizeCoverageFiles } = requireLcov();
 
 	const events = ['pull_request', 'pull_request_target'];
 
@@ -441,8 +668,17 @@ function requireMain () {
 	    const additionalMessage = core.getInput('additional-message');
 	    const updateComment = core.getInput('update-comment') === 'true';
 
-	    const artifact = await genhtml(coverageFiles, tmpPath);
+	    const normalizedCoverage = await normalizeCoverageFiles(coverageFiles, tmpPath);
 
+	    if (normalizedCoverage.fixedLines > 0) {
+	      for (const file of normalizedCoverage.files) {
+	        core.info(`Added missing LCOV line coverage for ${file.fixedLines} branch-only line(s) in ${file.coverageFile}.`);
+	      }
+	    }
+
+	    const artifact = await genhtml(normalizedCoverage.coverageFiles, tmpPath);
+
+	    // Keep coverage outputs based on the original tracefiles.
 	    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
 	    const totalCoverage = lcovTotal(coverageFile);
 	    const minimumCoverage = core.getInput('minimum-coverage');
@@ -78039,7 +78275,7 @@ async function streamToBuffer(stream, buffer, offset, end, encoding) {
  */
 async function readStreamToLocalFile(rs, file) {
     return new Promise((resolve, reject) => {
-        const ws = fs$1.createWriteStream(file);
+        const ws = fs$2.createWriteStream(file);
         rs.on("error", (err) => {
             reject(err);
         });
@@ -78055,8 +78291,8 @@ async function readStreamToLocalFile(rs, file) {
  *
  * Promisified version of fs.stat().
  */
-const fsStat = require$$0$8.promisify(fs$1.stat);
-const fsCreateReadStream = fs$1.createReadStream;
+const fsStat = require$$0$8.promisify(fs$2.stat);
+const fsCreateReadStream = fs$2.createReadStream;
 
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
@@ -108535,7 +108771,7 @@ function requireCommonjs$1 () {
 	const node_path_1 = require$$1$6;
 	const node_url_1 = require$$1$3;
 	const fs_1 = fs;
-	const actualFS = __importStar(fs$1);
+	const actualFS = __importStar(fs$2);
 	const realpathSync = fs_1.realpathSync.native;
 	// TODO: test perf of fs/promises realpath vs realpathCB,
 	// since the promises one uses realpath.native
@@ -118609,7 +118845,7 @@ function createRawFileUploadStream(filePath) {
         let sourcePath = filePath;
         const stats = yield fs__namespace.promises.lstat(filePath);
         if (stats.isSymbolicLink()) {
-            sourcePath = yield fs$2.realpath(filePath);
+            sourcePath = yield fs$1.realpath(filePath);
         }
         // Create a read stream from the file and pipe it to the upload stream
         const fileStream = fs__namespace.createReadStream(sourcePath, {
@@ -118652,7 +118888,7 @@ function createZipUploadStream(uploadSpecification_1) {
                 // Check if symlink and resolve the source path
                 let sourcePath = file.sourcePath;
                 if (file.stats.isSymbolicLink()) {
-                    sourcePath = yield fs$2.realpath(file.sourcePath);
+                    sourcePath = yield fs$1.realpath(file.sourcePath);
                 }
                 // Add the file to the zip
                 zip.file(sourcePath, {
@@ -121253,7 +121489,7 @@ const scrubQueryParameters = (url) => {
 function exists(path) {
     return __awaiter$4(this, void 0, void 0, function* () {
         try {
-            yield fs$2.access(path);
+            yield fs$1.access(path);
             return true;
         }
         catch (error) {
@@ -121450,7 +121686,7 @@ function resolveOrCreateDirectory() {
     return __awaiter$4(this, arguments, void 0, function* (downloadPath = getGitHubWorkspaceDir()) {
         if (!(yield exists(downloadPath))) {
             debug(`Artifact destination folder does not exist, creating: ${downloadPath}`);
-            yield fs$2.mkdir(downloadPath, { recursive: true });
+            yield fs$1.mkdir(downloadPath, { recursive: true });
         }
         else {
             debug(`Artifact destination folder already exists: ${downloadPath}`);

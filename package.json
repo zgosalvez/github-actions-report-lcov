@@ -6,6 +6,7 @@
   "scripts": {
     "lint": "eslint .",
     "prepare": "rm -rf dist && rollup -c",
+    "test": "node --test",
     "verify-dist": "node scripts/verify-dist-bundles.js"
   },
   "repository": {
