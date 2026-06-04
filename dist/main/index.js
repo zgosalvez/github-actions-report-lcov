@@ -1,13 +1,14 @@
 'use strict';
 
-var fs = require('fs');
 var os = require('os');
 var path$2 = require('path');
-var fs$1 = require('fs/promises');
+var fs = require('fs/promises');
+var fs$1 = require('fs');
 var assert$1 = require('assert');
 var crypto$1 = require('crypto');
 var require$$0$a = require('stream');
 var require$$0$2 = require('util');
+var fs$2 = require('node:fs');
 var http = require('http');
 var https = require('https');
 var require$$0$c = require('net');
@@ -41,7 +42,6 @@ var https$1 = require('node:https');
 var require$$0$b = require('tty');
 var require$$5$4 = require('url');
 var node_crypto = require('node:crypto');
-var fs$2 = require('node:fs');
 var require$$0$e = require('constants');
 var require$$1$6 = require('node:path');
 var require$$5$5 = require('node:fs/promises');
@@ -65,9 +65,9 @@ function _interopNamespaceDefault(e) {
 	return Object.freeze(n);
 }
 
-var fs__namespace = /*#__PURE__*/_interopNamespaceDefault(fs);
 var os__namespace = /*#__PURE__*/_interopNamespaceDefault(os);
 var path__namespace = /*#__PURE__*/_interopNamespaceDefault(path$2);
+var fs__namespace = /*#__PURE__*/_interopNamespaceDefault(fs$1);
 var crypto__namespace = /*#__PURE__*/_interopNamespaceDefault(crypto$1);
 var require$$0__namespace$1 = /*#__PURE__*/_interopNamespaceDefault(require$$0$a);
 var require$$0__namespace = /*#__PURE__*/_interopNamespaceDefault(require$$0$2);
@@ -113,310 +113,13 @@ function getAugmentedNamespace(n) {
 
 var main$1 = {};
 
-var FileResult = {};
-
-var hasRequiredFileResult;
-
-function requireFileResult () {
-	if (hasRequiredFileResult) return FileResult;
-	hasRequiredFileResult = 1;
-	FileResult.FileResult = class FileResult {
-	  constructor(fileName, linesResult) {
-	    this._name = fileName;
-	    this._result = linesResult;
-	  }
-
-	  get fileName() {
-	    return this._name;
-	  }
-
-	  get executed() {
-	    return this._result.hit;
-	  }
-
-	  get total() {
-	    return this._result.found;
-	  }
-
-	  get coverage() {
-	    let coverage = (this.executed / this.total) * 100;
-	    return parseFloat(coverage.toFixed(2));
-	  }
-	};
-
-	FileResult.CoverageResult = class CoverageResult {
-	  /**
-	   * @param {FileResult[]} fileResults
-	   */
-	  constructor(fileResults = []) {
-	    this._fileResults = fileResults;
-	  }
-
-	  get files() {
-	    return this._fileResults;
-	  }
-
-	  get coverage() {
-	    let total = 0;
-	    let executed = 0;
-	    this.files.forEach((fileResult) => {
-	      total += fileResult.total;
-	      executed += fileResult.executed;
-	    });
-	    let coverage = (executed / total) * 100;
-	    return parseFloat(coverage.toFixed(2));
-	  }
-	};
-	return FileResult;
-}
-
-var parser = {exports: {}};
-
-var hasRequiredParser;
-
-function requireParser () {
-	if (hasRequiredParser) return parser.exports;
-	hasRequiredParser = 1;
-	(function (module) {
-		const fs$1 = fs;
-
-		module.exports = function parse(filename) {
-		  const file = fs$1.readFileSync(filename, "utf-8");
-		  return module.exports.format(file);
-		};
-
-		module.exports.format = function (file) {
-		  const dataset = ["end_of_record"].concat(file.split("\n"));
-
-		  const data = dataset.map(function (current) {
-		    const item = {
-		      lines: {
-		        found: 0,
-		        hit: 0,
-		        details: [],
-		      },
-		      functions: {
-		        hit: 0,
-		        found: 0,
-		        details: [],
-		      },
-		      branches: {
-		        hit: 0,
-		        found: 0,
-		        details: [],
-		      },
-		    };
-		    const line = current.trim();
-		    const allparts = line.split(":");
-		    const parts = [allparts.shift(), allparts.join(":")];
-
-		    let lines;
-		    let fn;
-
-		    switch (parts[0].toUpperCase()) {
-		      case "TN":
-		        item.title = parts[1].trim();
-		        break;
-		      case "SF":
-		        item.file = parts.slice(1).join(":").trim();
-		        break;
-		      case "FNF":
-		        item.functions.found = Number(parts[1].trim());
-		        break;
-		      case "FNH":
-		        item.functions.hit = Number(parts[1].trim());
-		        break;
-		      case "LF":
-		        item.lines.found = Number(parts[1].trim());
-		        break;
-		      case "LH":
-		        item.lines.hit = Number(parts[1].trim());
-		        break;
-		      case "DA":
-		        lines = parts[1].split(",");
-		        item.lines.details.push({
-		          line: Number(lines[0]),
-		          hit: Number(lines[1]),
-		        });
-		        break;
-		      case "FN":
-		        fn = parts[1].split(",");
-		        item.functions.details.push({
-		          name: fn[1],
-		          line: Number(fn[0]),
-		        });
-		        break;
-		      case "FNDA":
-		        fn = parts[1].split(",");
-		        item.functions.details.some(function (i, k) {
-		          if (i.name === fn[1] && i.hit === undefined) {
-		            item.functions.details[k].hit = Number(fn[0]);
-		            return true;
-		          }
-		        });
-		        break;
-		      case "BRDA":
-		        fn = parts[1].split(",");
-		        item.branches.details.push({
-		          line: Number(fn[0]),
-		          block: Number(fn[1]),
-		          branch: Number(fn[2]),
-		          taken: fn[3] === "-" ? 0 : Number(fn[3]),
-		        });
-		        break;
-		      case "BRF":
-		        item.branches.found = Number(parts[1]);
-		        break;
-		      case "BRH":
-		        item.branches.hit = Number(parts[1]);
-		        break;
-		    }
-
-		    return item;
-		  });
-
-		  data.shift();
-
-		  if (!data.length) {
-		    throw new Error("FAILED_TO_PARSE_STRING");
-		  }
-		  return data;
-		};
-
-		module.exports.for_mat = function (file) {
-		  const dataset = ["end_of_record"].concat(file.split("\n"));
-		  let data = [];
-		  for (let index = 0; index < dataset.length; index++) {
-		    const item = {
-		      lines: {
-		        found: 0,
-		        hit: 0,
-		        details: [],
-		      },
-		      functions: {
-		        hit: 0,
-		        found: 0,
-		        details: [],
-		      },
-		      branches: {
-		        hit: 0,
-		        found: 0,
-		        details: [],
-		      },
-		    };
-		    const line = dataset[index].trim();
-		    const allparts = line.split(":");
-		    const parts = [allparts.shift(), allparts.join(":")];
-
-		    let lines;
-		    let fn;
-
-		    switch (parts[0].toUpperCase()) {
-		      case "TN":
-		        item.title = parts[1].trim();
-		        break;
-		      case "SF":
-		        item.file = parts.slice(1).join(":").trim();
-		        break;
-		      case "FNF":
-		        item.functions.found = Number(parts[1].trim());
-		        break;
-		      case "FNH":
-		        item.functions.hit = Number(parts[1].trim());
-		        break;
-		      case "LF":
-		        item.lines.found = Number(parts[1].trim());
-		        break;
-		      case "LH":
-		        item.lines.hit = Number(parts[1].trim());
-		        break;
-		      case "DA":
-		        lines = parts[1].split(",");
-		        item.lines.details.push({
-		          line: Number(lines[0]),
-		          hit: Number(lines[1]),
-		        });
-		        break;
-		      case "FN":
-		        fn = parts[1].split(",");
-		        item.functions.details.push({
-		          name: fn[1],
-		          line: Number(fn[0]),
-		        });
-		        break;
-		      case "FNDA":
-		        fn = parts[1].split(",");
-		        item.functions.details.some(function (i, k) {
-		          if (i.name === fn[1] && i.hit === undefined) {
-		            item.functions.details[k].hit = Number(fn[0]);
-		            return true;
-		          }
-		        });
-		        break;
-		      case "BRDA":
-		        fn = parts[1].split(",");
-		        item.branches.details.push({
-		          line: Number(fn[0]),
-		          block: Number(fn[1]),
-		          branch: Number(fn[2]),
-		          taken: fn[3] === "-" ? 0 : Number(fn[3]),
-		        });
-		        break;
-		      case "BRF":
-		        item.branches.found = Number(parts[1]);
-		        break;
-		      case "BRH":
-		        item.branches.hit = Number(parts[1]);
-		        break;
-		    }
-
-		    return item;
-		  }
-
-		  data.shift();
-
-		  if (!data.length) {
-		    throw new Error("FAILED_TO_PARSE_STRING");
-		  }
-		  return data;
-		}; 
-	} (parser));
-	return parser.exports;
-}
-
-var src$1;
-var hasRequiredSrc$1;
-
-function requireSrc$1 () {
-	if (hasRequiredSrc$1) return src$1;
-	hasRequiredSrc$1 = 1;
-	const { FileResult, CoverageResult } = requireFileResult();
-	const parser = requireParser();
-
-	src$1 = function total(filename) {
-	  const results = parser(filename);
-
-	  if (!results) {
-	    throw new Error("content is empty");
-	  }
-
-	  /** @type FileResult[] */
-	  const fileResults = results.map((result) => {
-	    return new FileResult(result.file, result.lines);
-	  });
-	  const coverageResult = new CoverageResult(fileResults);
-	  return coverageResult.coverage;
-	};
-	return src$1;
-}
-
 var lcov;
 var hasRequiredLcov;
 
 function requireLcov () {
 	if (hasRequiredLcov) return lcov;
 	hasRequiredLcov = 1;
-	const fs = fs$1;
+	const fs$1 = fs;
 	const path = path$2;
 
 	function parsePositiveLineNumber(value) {
@@ -595,10 +298,10 @@ function requireLcov () {
 	  const files = [];
 	  let fixedLines = 0;
 
-	  await fs.mkdir(normalizedDir, { recursive: true });
+	  await fs$1.mkdir(normalizedDir, { recursive: true });
 
 	  for (const [index, coverageFile] of coverageFiles.entries()) {
-	    const content = await fs.readFile(coverageFile, 'utf8');
+	    const content = await fs$1.readFile(coverageFile, 'utf8');
 	    const normalized = normalizeLcovContent(content);
 
 	    fixedLines += normalized.fixedLines;
@@ -613,7 +316,7 @@ function requireLcov () {
 	      `${index}-${path.basename(coverageFile)}`,
 	    );
 
-	    await fs.writeFile(normalizedCoverageFile, normalized.content);
+	    await fs$1.writeFile(normalizedCoverageFile, normalized.content);
 	    normalizedCoverageFiles.push(normalizedCoverageFile);
 	    files.push({
 	      coverageFile,
@@ -641,7 +344,6 @@ var hasRequiredMain;
 function requireMain () {
 	if (hasRequiredMain) return main$1;
 	hasRequiredMain = 1;
-	const lcovTotal = requireSrc$1();
 	const os$1 = os;
 	const path = path$2;
 	const { normalizeCoverageFiles } = requireLcov();
@@ -680,6 +382,7 @@ function requireMain () {
 
 	    // Keep coverage outputs based on the original tracefiles.
 	    const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+	    const { default: lcovTotal } = await Promise.resolve().then(function () { return index$1; });
 	    const totalCoverage = lcovTotal(coverageFile);
 	    const minimumCoverage = core.getInput('minimum-coverage');
 	    const gitHubToken = core.getInput('github-token').trim();
@@ -24722,11 +24425,11 @@ function requireUtil$6 () {
 	return util$6;
 }
 
-var parse$2;
+var parse$3;
 var hasRequiredParse;
 
 function requireParse () {
-	if (hasRequiredParse) return parse$2;
+	if (hasRequiredParse) return parse$3;
 	hasRequiredParse = 1;
 
 	const { maxNameValuePairSize, maxAttributeValueSize } = requireConstants$3();
@@ -25040,11 +24743,11 @@ function requireParse () {
 	  return parseUnparsedAttributes(unparsedAttributes, cookieAttributeList)
 	}
 
-	parse$2 = {
+	parse$3 = {
 	  parseSetCookie,
 	  parseUnparsedAttributes
 	};
-	return parse$2;
+	return parse$3;
 }
 
 var cookies;
@@ -29687,7 +29390,7 @@ var __awaiter$k = (globalThis && globalThis.__awaiter) || function (thisArg, _ar
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const { access: access$1, appendFile, writeFile } = fs.promises;
+const { access: access$1, appendFile, writeFile } = fs$1.promises;
 const SUMMARY_ENV_VAR = 'GITHUB_STEP_SUMMARY';
 class Summary {
     constructor() {
@@ -29709,7 +29412,7 @@ class Summary {
                 throw new Error(`Unable to find environment variable for $${SUMMARY_ENV_VAR}. Check if your runtime environment supports job summaries.`);
             }
             try {
-                yield access$1(pathFromEnv, fs.constants.R_OK | fs.constants.W_OK);
+                yield access$1(pathFromEnv, fs$1.constants.R_OK | fs$1.constants.W_OK);
             }
             catch (_a) {
                 throw new Error(`Unable to access summary file: '${pathFromEnv}'. Check if the file has correct read/write permissions.`);
@@ -31298,8 +31001,8 @@ class Context {
         var _a, _b, _c;
         this.payload = {};
         if (process.env.GITHUB_EVENT_PATH) {
-            if (fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
-                this.payload = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, { encoding: 'utf8' }));
+            if (fs$1.existsSync(process.env.GITHUB_EVENT_PATH)) {
+                this.payload = JSON.parse(fs$1.readFileSync(process.env.GITHUB_EVENT_PATH, { encoding: 'utf8' }));
             }
             else {
                 const path = process.env.GITHUB_EVENT_PATH;
@@ -32642,7 +32345,7 @@ function expand$1(template, context) {
 }
 
 // pkg/dist-src/parse.js
-function parse$1(options) {
+function parse$2(options) {
   let method = options.method.toUpperCase();
   let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
   let headers = Object.assign({}, options.headers);
@@ -32708,7 +32411,7 @@ function parse$1(options) {
 
 // pkg/dist-src/endpoint-with-defaults.js
 function endpointWithDefaults(defaults, route, options) {
-  return parse$1(merge(defaults, route, options));
+  return parse$2(merge(defaults, route, options));
 }
 
 // pkg/dist-src/with-defaults.js
@@ -32719,7 +32422,7 @@ function withDefaults$2(oldDefaults, newDefaults) {
     DEFAULTS: DEFAULTS2,
     defaults: withDefaults$2.bind(null, DEFAULTS2),
     merge: merge.bind(null, DEFAULTS2),
-    parse: parse$1
+    parse: parse$2
   });
 }
 
@@ -39364,6 +39067,178 @@ var glob$1 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	create: create,
 	hashFiles: hashFiles
+});
+
+class FileResult {
+  constructor(fileName, linesResult) {
+    this._name = fileName;
+    this._result = linesResult;
+  }
+
+  get fileName() {
+    return this._name;
+  }
+
+  get executed() {
+    return this._result.hit;
+  }
+
+  get total() {
+    return this._result.found;
+  }
+
+  get coverage() {
+    let coverage = (this.executed / this.total) * 100;
+    return parseFloat(coverage.toFixed(2));
+  }
+}
+
+class CoverageResult {
+  /**
+   * @param {FileResult[]} fileResults
+   */
+  constructor(fileResults = []) {
+    this._fileResults = fileResults;
+  }
+
+  get files() {
+    return this._fileResults;
+  }
+
+  get coverage() {
+    let total = 0;
+    let executed = 0;
+    this.files.forEach((fileResult) => {
+      total += fileResult.total;
+      executed += fileResult.executed;
+    });
+    let coverage = (executed / total) * 100;
+    return parseFloat(coverage.toFixed(2));
+  }
+}
+
+function parse$1(filename) {
+  const file = fs$2.readFileSync(filename, "utf-8");
+  return format(file);
+}
+
+function format(file) {
+  const dataset = ["end_of_record"].concat(file.split("\n"));
+
+  const data = dataset.map(function (current) {
+    const item = {
+      lines: {
+        found: 0,
+        hit: 0,
+        details: [],
+      },
+      functions: {
+        hit: 0,
+        found: 0,
+        details: [],
+      },
+      branches: {
+        hit: 0,
+        found: 0,
+        details: [],
+      },
+    };
+    const line = current.trim();
+    const allparts = line.split(":");
+    const parts = [allparts.shift(), allparts.join(":")];
+
+    let lines;
+    let fn;
+
+    switch (parts[0].toUpperCase()) {
+      case "TN":
+        item.title = parts[1].trim();
+        break;
+      case "SF":
+        item.file = parts.slice(1).join(":").trim();
+        break;
+      case "FNF":
+        item.functions.found = Number(parts[1].trim());
+        break;
+      case "FNH":
+        item.functions.hit = Number(parts[1].trim());
+        break;
+      case "LF":
+        item.lines.found = Number(parts[1].trim());
+        break;
+      case "LH":
+        item.lines.hit = Number(parts[1].trim());
+        break;
+      case "DA":
+        lines = parts[1].split(",");
+        item.lines.details.push({
+          line: Number(lines[0]),
+          hit: Number(lines[1]),
+        });
+        break;
+      case "FN":
+        fn = parts[1].split(",");
+        item.functions.details.push({
+          name: fn[1],
+          line: Number(fn[0]),
+        });
+        break;
+      case "FNDA":
+        fn = parts[1].split(",");
+        item.functions.details.some(function (i, k) {
+          if (i.name === fn[1] && i.hit === undefined) {
+            item.functions.details[k].hit = Number(fn[0]);
+            return true;
+          }
+        });
+        break;
+      case "BRDA":
+        fn = parts[1].split(",");
+        item.branches.details.push({
+          line: Number(fn[0]),
+          block: Number(fn[1]),
+          branch: Number(fn[2]),
+          taken: fn[3] === "-" ? 0 : Number(fn[3]),
+        });
+        break;
+      case "BRF":
+        item.branches.found = Number(parts[1]);
+        break;
+      case "BRH":
+        item.branches.hit = Number(parts[1]);
+        break;
+    }
+
+    return item;
+  });
+
+  data.shift();
+
+  if (!data.length) {
+    throw new Error("FAILED_TO_PARSE_STRING");
+  }
+  return data;
+}
+
+function total(filename) {
+  const results = parse$1(filename);
+
+  if (!results) {
+    throw new Error("content is empty");
+  }
+
+  /** @type FileResult[] */
+  const fileResults = results.map((result) => {
+    return new FileResult(result.file, result.lines);
+  });
+  const coverageResult = new CoverageResult(fileResults);
+  return coverageResult.coverage;
+}
+//
+
+var index$1 = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	default: total
 });
 
 // Used for controlling the highWaterMark value of the zip that is being streamed
@@ -82505,14 +82380,14 @@ function requireReaddirGlob () {
 	hasRequiredReaddirGlob = 1;
 	readdirGlob_1 = readdirGlob;
 
-	const fs$1 = fs;
+	const fs = fs$1;
 	const { EventEmitter } = require$$1;
 	const { Minimatch } = requireMinimatch();
 	const { resolve } = path$2;
 
 	function readdir(dir, strict) {
 	  return new Promise((resolve, reject) => {
-	    fs$1.readdir(dir, {withFileTypes: true} ,(err, files) => {
+	    fs.readdir(dir, {withFileTypes: true} ,(err, files) => {
 	      if(err) {
 	        switch (err.code) {
 	          case 'ENOTDIR':      // Not a directory
@@ -82541,7 +82416,7 @@ function requireReaddirGlob () {
 	}
 	function stat(file, followSymlinks) {
 	  return new Promise((resolve, reject) => {
-	    const statFunc = followSymlinks ? fs$1.stat : fs$1.lstat;
+	    const statFunc = followSymlinks ? fs.stat : fs.lstat;
 	    statFunc(file, (err, stats) => {
 	      if(err) {
 	        switch (err.code) {
@@ -89337,7 +89212,7 @@ var hasRequiredGracefulFs;
 function requireGracefulFs () {
 	if (hasRequiredGracefulFs) return gracefulFs;
 	hasRequiredGracefulFs = 1;
-	var fs$1 = fs;
+	var fs = fs$1;
 	var polyfills = requirePolyfills();
 	var legacy = requireLegacyStreams();
 	var clone = requireClone();
@@ -89379,18 +89254,18 @@ function requireGracefulFs () {
 	  };
 
 	// Once time initialization
-	if (!fs$1[gracefulQueue]) {
+	if (!fs[gracefulQueue]) {
 	  // This queue can be shared by multiple loaded instances
 	  var queue = commonjsGlobal[gracefulQueue] || [];
-	  publishQueue(fs$1, queue);
+	  publishQueue(fs, queue);
 
 	  // Patch fs.close/closeSync to shared queue version, because we need
 	  // to retry() whenever a close happens *anywhere* in the program.
 	  // This is essential when multiple graceful-fs instances are
 	  // in play at the same time.
-	  fs$1.close = (function (fs$close) {
+	  fs.close = (function (fs$close) {
 	    function close (fd, cb) {
-	      return fs$close.call(fs$1, fd, function (err) {
+	      return fs$close.call(fs, fd, function (err) {
 	        // This function uses the graceful-fs shared queue
 	        if (!err) {
 	          resetQueue();
@@ -89405,12 +89280,12 @@ function requireGracefulFs () {
 	      value: fs$close
 	    });
 	    return close
-	  })(fs$1.close);
+	  })(fs.close);
 
-	  fs$1.closeSync = (function (fs$closeSync) {
+	  fs.closeSync = (function (fs$closeSync) {
 	    function closeSync (fd) {
 	      // This function uses the graceful-fs shared queue
-	      fs$closeSync.apply(fs$1, arguments);
+	      fs$closeSync.apply(fs, arguments);
 	      resetQueue();
 	    }
 
@@ -89418,24 +89293,24 @@ function requireGracefulFs () {
 	      value: fs$closeSync
 	    });
 	    return closeSync
-	  })(fs$1.closeSync);
+	  })(fs.closeSync);
 
 	  if (/\bgfs4\b/i.test(process.env.NODE_DEBUG || '')) {
 	    process.on('exit', function() {
-	      debug(fs$1[gracefulQueue]);
-	      assert$1.equal(fs$1[gracefulQueue].length, 0);
+	      debug(fs[gracefulQueue]);
+	      assert$1.equal(fs[gracefulQueue].length, 0);
 	    });
 	  }
 	}
 
 	if (!commonjsGlobal[gracefulQueue]) {
-	  publishQueue(commonjsGlobal, fs$1[gracefulQueue]);
+	  publishQueue(commonjsGlobal, fs[gracefulQueue]);
 	}
 
-	gracefulFs = patch(clone(fs$1));
-	if (process.env.TEST_GRACEFUL_FS_GLOBAL_PATCH && !fs$1.__patched) {
-	    gracefulFs = patch(fs$1);
-	    fs$1.__patched = true;
+	gracefulFs = patch(clone(fs));
+	if (process.env.TEST_GRACEFUL_FS_GLOBAL_PATCH && !fs.__patched) {
+	    gracefulFs = patch(fs);
+	    fs.__patched = true;
 	}
 
 	function patch (fs) {
@@ -89709,7 +89584,7 @@ function requireGracefulFs () {
 
 	function enqueue (elem) {
 	  debug('ENQUEUE', elem[0].name, elem[1]);
-	  fs$1[gracefulQueue].push(elem);
+	  fs[gracefulQueue].push(elem);
 	  retry();
 	}
 
@@ -89721,12 +89596,12 @@ function requireGracefulFs () {
 	// delay between attempts so that we'll retry these jobs sooner
 	function resetQueue () {
 	  var now = Date.now();
-	  for (var i = 0; i < fs$1[gracefulQueue].length; ++i) {
+	  for (var i = 0; i < fs[gracefulQueue].length; ++i) {
 	    // entries that are only a length of 2 are from an older version, don't
 	    // bother modifying those since they'll be retried anyway.
-	    if (fs$1[gracefulQueue][i].length > 2) {
-	      fs$1[gracefulQueue][i][3] = now; // startTime
-	      fs$1[gracefulQueue][i][4] = now; // lastTime
+	    if (fs[gracefulQueue][i].length > 2) {
+	      fs[gracefulQueue][i][3] = now; // startTime
+	      fs[gracefulQueue][i][4] = now; // lastTime
 	    }
 	  }
 	  // call retry to make sure we're actively processing the queue
@@ -89738,10 +89613,10 @@ function requireGracefulFs () {
 	  clearTimeout(retryTimer);
 	  retryTimer = undefined;
 
-	  if (fs$1[gracefulQueue].length === 0)
+	  if (fs[gracefulQueue].length === 0)
 	    return
 
-	  var elem = fs$1[gracefulQueue].shift();
+	  var elem = fs[gracefulQueue].shift();
 	  var fn = elem[0];
 	  var args = elem[1];
 	  // these items may be unset if they were added by an older graceful-fs
@@ -89776,7 +89651,7 @@ function requireGracefulFs () {
 	    } else {
 	      // if we can't do this job yet, push it to the end of the queue
 	      // and let the next iteration check again
-	      fs$1[gracefulQueue].push(elem);
+	      fs[gracefulQueue].push(elem);
 	    }
 	  }
 
@@ -108770,7 +108645,7 @@ function requireCommonjs$1 () {
 	const lru_cache_1 = /*@__PURE__*/ requireCommonjs$3();
 	const node_path_1 = require$$1$6;
 	const node_url_1 = require$$1$3;
-	const fs_1 = fs;
+	const fs_1 = fs$1;
 	const actualFS = __importStar(fs$2);
 	const realpathSync = fs_1.realpathSync.native;
 	// TODO: test perf of fs/promises realpath vs realpathCB,
@@ -112634,7 +112509,7 @@ var hasRequiredCore;
 function requireCore () {
 	if (hasRequiredCore) return core;
 	hasRequiredCore = 1;
-	var fs$1 = fs;
+	var fs = fs$1;
 	var glob = requireReaddirGlob();
 	var async = require$$2;
 	var path = path$2;
@@ -112737,7 +112612,7 @@ function requireCore () {
 	  task.data = data;
 	  this._entriesCount++;
 
-	  if (data.stats && data.stats instanceof fs$1.Stats) {
+	  if (data.stats && data.stats instanceof fs.Stats) {
 	    task = this._updateQueueTaskWithStats(task, data.stats);
 	    if (task) {
 	      if (data.stats.size) {
@@ -113048,7 +112923,7 @@ function requireCore () {
 	    return;
 	  }
 
-	  fs$1.lstat(task.filepath, function(err, stats) {
+	  fs.lstat(task.filepath, function(err, stats) {
 	    if (this._state.aborted) {
 	      setImmediate(callback);
 	      return;
@@ -113128,7 +113003,7 @@ function requireCore () {
 	    task.data.sourceType = 'buffer';
 	    task.source = Buffer.concat([]);
 	  } else if (stats.isSymbolicLink() && this._moduleSupports('symlink')) {
-	    var linkPath = fs$1.readlinkSync(task.filepath);
+	    var linkPath = fs.readlinkSync(task.filepath);
 	    var dirName = path.dirname(task.filepath);
 	    task.data.type = 'symlink';
 	    task.data.linkname = path.relative(dirName, path.resolve(dirName, linkPath));
@@ -118845,7 +118720,7 @@ function createRawFileUploadStream(filePath) {
         let sourcePath = filePath;
         const stats = yield fs__namespace.promises.lstat(filePath);
         if (stats.isSymbolicLink()) {
-            sourcePath = yield fs$1.realpath(filePath);
+            sourcePath = yield fs.realpath(filePath);
         }
         // Create a read stream from the file and pipe it to the upload stream
         const fileStream = fs__namespace.createReadStream(sourcePath, {
@@ -118888,7 +118763,7 @@ function createZipUploadStream(uploadSpecification_1) {
                 // Check if symlink and resolve the source path
                 let sourcePath = file.sourcePath;
                 if (file.stats.isSymbolicLink()) {
-                    sourcePath = yield fs$1.realpath(file.sourcePath);
+                    sourcePath = yield fs.realpath(file.sourcePath);
                 }
                 // Add the file to the zip
                 zip.file(sourcePath, {
@@ -121248,7 +121123,7 @@ function requireMkdirp () {
 	if (hasRequiredMkdirp) return mkdirp;
 	hasRequiredMkdirp = 1;
 	var path = path$2;
-	var fs$1 = fs;
+	var fs = fs$1;
 	var _0777 = parseInt('0777', 8);
 
 	mkdirp = mkdirP.mkdirp = mkdirP.mkdirP = mkdirP;
@@ -121263,7 +121138,7 @@ function requireMkdirp () {
 	    }
 	    
 	    var mode = opts.mode;
-	    var xfs = opts.fs || fs$1;
+	    var xfs = opts.fs || fs;
 	    
 	    if (mode === undefined) {
 	        mode = _0777;
@@ -121310,7 +121185,7 @@ function requireMkdirp () {
 	    }
 	    
 	    var mode = opts.mode;
-	    var xfs = opts.fs || fs$1;
+	    var xfs = opts.fs || fs;
 	    
 	    if (mode === undefined) {
 	        mode = _0777;
@@ -121358,7 +121233,7 @@ var hasRequiredExtract;
 function requireExtract () {
 	if (hasRequiredExtract) return extract;
 	hasRequiredExtract = 1;
-	var fs$1 = fs;
+	var fs = fs$1;
 	var path = path$2;
 	var util = require$$0$2;
 	var mkdirp = requireMkdirp();
@@ -121415,7 +121290,7 @@ function requireExtract () {
 	    this.unfinishedEntries++;
 
 	    var writeFileFn = function() {
-	        var pipedStream = fs$1.createWriteStream(destPath);
+	        var pipedStream = fs.createWriteStream(destPath);
 
 	        pipedStream.on('close', function() {
 	            self.unfinishedEntries--;
@@ -121489,7 +121364,7 @@ const scrubQueryParameters = (url) => {
 function exists(path) {
     return __awaiter$4(this, void 0, void 0, function* () {
         try {
-            yield fs$1.access(path);
+            yield fs.access(path);
             return true;
         }
         catch (error) {
@@ -121686,7 +121561,7 @@ function resolveOrCreateDirectory() {
     return __awaiter$4(this, arguments, void 0, function* (downloadPath = getGitHubWorkspaceDir()) {
         if (!(yield exists(downloadPath))) {
             debug(`Artifact destination folder does not exist, creating: ${downloadPath}`);
-            yield fs$1.mkdir(downloadPath, { recursive: true });
+            yield fs.mkdir(downloadPath, { recursive: true });
         }
         else {
             debug(`Artifact destination folder already exists: ${downloadPath}`);
