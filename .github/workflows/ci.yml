@@ -16,7 +16,7 @@ jobs:
     - name: Clone the repository
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@ca46236c6ce584ae24bc6283ba8dcf4b3ec8a066
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@3db98c0363e2fa5df3e1c4c471777a7c10b24cc9
 
   build_test:
     name: Build & Test
