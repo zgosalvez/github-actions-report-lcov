@@ -20,12 +20,13 @@ For more information on these inputs, see the [Workflow syntax for GitHub Action
 - `title-prefix`: A prefix before the title "LCOV of commit...". Optional. Default: ``
 - `additional-message`: Custom text appended to the code coverage comment in the pull request. Optional. Default: ``
 - `update-comment`: Set to `true` to update the previous code coverage comment if such exists. When set to `false`, a new comment is always created. Optional. Default: `false`
+- `thresholds`: Two comma-separated coverage percentages, `green,yellow`, used to color the 🟢/🟡/🔴 badges in the PR comment. A rate at or above the first number is green, at or above the second is yellow, and below that is red. Optional. Default: `90,70`
 
 ### Outputs
 - `total-coverage`: The total coverage from scanned files.
 - `artifact-id`: The GitHub artifact id for the generated HTML report.
 
-Sample comment:
+Sample comment (rendered as markdown tables with color-coded coverage badges):
 ![Screenshot](assets/comment.png)
 
 ### Common workflow
