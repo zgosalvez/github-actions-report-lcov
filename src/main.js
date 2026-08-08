@@ -2,7 +2,7 @@ const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 const { normalizeCoverageFiles } = require('./lcov');
-const { parseLcovSummary, parseLcovList, formatSummaryTable, formatFilesTable, parseThresholds } = require('./format');
+const { parseLcovSummary, parseLcovList, formatSummaryTable, formatFilesTable, formatLegend, parseThresholds, DEFAULT_THRESHOLDS } = require('./format');
 
 const events = ['pull_request', 'pull_request_target'];
 
@@ -25,8 +25,6 @@ async function run() {
     const titlePrefix = core.getInput('title-prefix');
     const additionalMessage = core.getInput('additional-message');
     const updateComment = core.getInput('update-comment') === 'true';
-    const thresholds = parseThresholds(core.getInput('thresholds'));
-
     const normalizedCoverage = await normalizeCoverageFiles(coverageFiles, tmpPath);
 
     if (normalizedCoverage.fixedLines > 0) {
@@ -52,12 +50,22 @@ async function run() {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
       const details = await detail(coverageFile, octokit);
+      
+      let thresholds;
+
+      try {
+        thresholds = parseThresholds(core.getInput('thresholds'));
+      } catch (error) {
+        core.warning(`${error.message} Falling back to the default thresholds.`);
+        thresholds = DEFAULT_THRESHOLDS;
+      }
+
       const summaryTable = formatSummaryTable(parseLcovSummary(summary), thresholds);
       const filesTable = formatFilesTable(parseLcovList(details), thresholds);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
-      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n\n${summaryTable}\n\n${filesTable}${additionalMessage ? `\n${additionalMessage}` : ''}`;
+      let body = `${commentHeaderPrefix} [<code>${shaShort}</code>](${github.context.payload.pull_request.number}/commits/${sha}) during [${github.context.workflow} #${github.context.runNumber}](../actions/runs/${github.context.runId})\n\n${summaryTable}\n\n${filesTable}\n\n${formatLegend(thresholds)}${additionalMessage ? `\n${additionalMessage}` : ''}`;
 
       if (!isMinimumCoverageReached) {
         body += `\n:no_entry: ${errorMessage}`;
@@ -282,8 +290,6 @@ async function detail(coverageFile, octokit) {
     if (index <= 2) return true; // Include header
 
     for (const changedFile of changedFiles) {
-      console.log(`${line} === ${changedFile}`);
-
       if (line.startsWith(changedFile)) return true;
     }
 

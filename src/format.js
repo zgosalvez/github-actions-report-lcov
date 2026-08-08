@@ -197,6 +197,13 @@ function formatFilesTable(rows, thresholds = DEFAULT_THRESHOLDS) {
   return lines.join('\n');
 }
 
+// Renders the badge legend for the configured thresholds.
+function formatLegend(thresholds = DEFAULT_THRESHOLDS) {
+  const [greenMin, yellowMin] = thresholds;
+
+  return `> 🟢 ≥ ${greenMin}% · 🟡 ≥ ${yellowMin}% · 🔴 below ${yellowMin}% · ⚪ no data`;
+}
+
 module.exports = {
   DEFAULT_THRESHOLDS,
   parseThresholds,
@@ -205,4 +212,5 @@ module.exports = {
   parseLcovList,
   formatSummaryTable,
   formatFilesTable,
+  formatLegend
 };
