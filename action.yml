@@ -29,6 +29,10 @@ inputs:
     description: 'Set to `true` to update the previous code coverage comment if such exists. When set to `false`, a new comment is always created. Optional. Default: `false`'
     required: false
     default: "false"
+  thresholds:
+    description: 'Two comma-separated coverage percentages, `green,yellow`, used to color the 🟢/🟡/🔴 badges in the PR comment. A rate at or above the first number is green, at or above the second is yellow, and below that is red. Optional. Default: `90,70`'
+    required: false
+    default: "90,70"
 outputs:
   total-coverage:
       description: 'The total coverage from scanned files.'
