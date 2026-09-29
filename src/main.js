@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const { normalizeCoverageFiles } = require('./lcov');
 const { parseLcovSummary, parseLcovList, formatSummaryTable, formatFilesTable, formatLegend, parseThresholds, DEFAULT_THRESHOLDS } = require('./format');
+const { getChangedFiles } = require('./changed-files');
 
 const events = ['pull_request', 'pull_request_target'];
 
@@ -49,7 +50,15 @@ async function run() {
     if (hasGithubToken && isPR) {
       const octokit = await github.getOctokit(gitHubToken);
       const summary = await summarize(coverageFile);
-      const details = await detail(coverageFile, octokit);
+      const changedFiles = await getChangedFiles({
+        core,
+        exec,
+        github,
+        octokit,
+        token: gitHubToken,
+        cwd: core.getInput('working-directory').trim() || './',
+      });
+      const details = changedFiles === null ? null : await detail(coverageFile, changedFiles);
       
       let thresholds;
 
@@ -61,7 +70,7 @@ async function run() {
       }
 
       const summaryTable = formatSummaryTable(parseLcovSummary(summary), thresholds);
-      const filesTable = formatFilesTable(parseLcovList(details), thresholds);
+      const filesTable = formatFilesTable(details === null ? null : parseLcovList(details), thresholds);
       const sha = github.context.payload.pull_request.head.sha;
       const shaShort = sha.substr(0, 7);
       const commentHeaderPrefix = `### ${titlePrefix ? `${titlePrefix} ` : ''}[LCOV](https://github.com/marketplace/actions/report-lcov) of commit`;
@@ -239,7 +248,7 @@ async function summarize(coverageFile) {
   return lines.join('\n');
 }
 
-async function detail(coverageFile, octokit) {
+async function detail(coverageFile, changedFiles) {
   let output = '';
 
   const options = {};
@@ -276,15 +285,6 @@ async function detail(coverageFile, octokit) {
   lines.shift(); // Removes "Reading tracefile..."
   lines.pop(); // Removes "Total..."
   lines.pop(); // Removes "========"
-
-  const listFilesOptions = octokit
-    .rest.pulls.listFiles.endpoint.merge({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      pull_number: github.context.payload.pull_request.number,
-    });
-  const listFilesResponse = await octokit.paginate(listFilesOptions);
-  const changedFiles = listFilesResponse.map(file => file.filename);
 
   lines = lines.filter((line, index) => {
     if (index <= 2) return true; // Include header

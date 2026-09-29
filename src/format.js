@@ -174,7 +174,8 @@ function formatFileMetricCell(metric, thresholds) {
 }
 
 // Formats parsed per-file coverage rows (see parseLcovList) as a
-// GitHub-flavored markdown table.
+// GitHub-flavored markdown table. `rows` is null when the pull request's
+// changed files could not be listed.
 function formatFilesTable(rows, thresholds = DEFAULT_THRESHOLDS) {
   const lines = [
     '### 📁 Files Changed Coverage',
@@ -182,6 +183,11 @@ function formatFilesTable(rows, thresholds = DEFAULT_THRESHOLDS) {
     '| File | Lines | Functions | Branches |',
     '|---|---|---|---|',
   ];
+
+  if (rows === null) {
+    lines.push('| Changed files could not be listed, see the workflow log | | | |');
+    return lines.join('\n');
+  }
 
   if (rows.length === 0) {
     lines.push('| No coverage data for changed files | | | |');

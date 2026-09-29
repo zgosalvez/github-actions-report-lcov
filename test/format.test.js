@@ -171,3 +171,10 @@ test('formatFilesTable renders a fallback row when there are no changed files', 
 
   assert.match(table, /No coverage data for changed files/);
 });
+
+test('formatFilesTable renders an unavailable row when changed files could not be listed', () => {
+  const table = formatFilesTable(null);
+
+  assert.match(table, /Changed files could not be listed, see the workflow log/);
+  assert.doesNotMatch(table, /No coverage data for changed files/);
+});
