@@ -16,7 +16,7 @@ jobs:
     - name: Clone the repository
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@c5fc58bd0be7a4b94b73ce40250322d5b838a108
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@62574f011e0d1967d555a862bd28a7abba8684fe
 
   build_test:
     name: Build & Test
@@ -32,7 +32,7 @@ jobs:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: Get runs.using version
       id: get-runs-using-version
-      uses: zgosalvez/github-actions-get-action-runs-using-version@f19eec36a1f274600a029dc6babd234421088651
+      uses: zgosalvez/github-actions-get-action-runs-using-version@9b07e0067e2f053ca84666dc2be5812ac6c9e0a2
     - name: Set up Node
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
       with:
