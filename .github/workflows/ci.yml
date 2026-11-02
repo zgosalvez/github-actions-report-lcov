@@ -16,7 +16,7 @@ jobs:
     - name: Clone the repository
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Ensure SHA pinned actions
-      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@62574f011e0d1967d555a862bd28a7abba8684fe
+      uses: zgosalvez/github-actions-ensure-sha-pinned-actions@76ed8a4c86957c2d27d44bab47f172193149d926
 
   build_test:
     name: Build & Test
@@ -32,9 +32,9 @@ jobs:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: Get runs.using version
       id: get-runs-using-version
-      uses: zgosalvez/github-actions-get-action-runs-using-version@9b07e0067e2f053ca84666dc2be5812ac6c9e0a2
+      uses: zgosalvez/github-actions-get-action-runs-using-version@39b5b7807f005d5e0f8489925a0126c055973b90
     - name: Set up Node
-      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
       with:
         node-version: v${{ steps.get-runs-using-version.outputs.version }}
     - name: Cache Node Packages
@@ -54,7 +54,7 @@ jobs:
       run: npm run prepare
     - name: Verify bundled action dependencies
       run: npm run verify-dist
-    - uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d
+    - uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c
       if: github.event.pull_request.head.repo.full_name == github.repository
       with:
         commit_message: Apply `npm run prepare` changes
