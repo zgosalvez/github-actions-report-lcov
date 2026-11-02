@@ -61,6 +61,8 @@ jobs:
 ```
 *Note:* Only the `pull_request` and `pull_request_target` events are supported. This action does nothing when triggered by other event types.
 
+*Note:* On `pull_request`, the files changed by the pull request are found with a local `git diff` of the checked-out merge commit against its first parent, fetching the two parents if the checkout is shallow. This works on pull requests too large for the GitHub API, which fails with "Sorry, this diff is taking too long to generate". On `pull_request_target`, or when there is no git checkout, the GitHub API is used instead.
+
 ### Flutter Workflows
 
 This is used in my opinionated [GitHub Actions: Flutter Workflows](https://github.com/zgosalvez/github-actions-flutter-workflows) repository along with other actions for a complete end-to-end DevOps experience.
