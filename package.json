@@ -20,7 +20,7 @@
   "author": "Zennon Gosalvez",
   "license": "MIT",
   "dependencies": {
-    "@actions/artifact": "^6.2.1",
+    "@actions/artifact": "^6.3.1",
     "@actions/core": "^3.0.1",
     "@actions/exec": "^3.0.0",
     "@actions/github": "^9.1.1",
@@ -33,7 +33,7 @@
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "eslint": "^10.11.0",
-    "rollup": "^4.63.5"
+    "eslint": "^10.13.0",
+    "rollup": "^4.65.1"
   }
 }
