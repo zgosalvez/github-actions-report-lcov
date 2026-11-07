@@ -34,6 +34,6 @@
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "eslint": "^10.13.0",
-    "rollup": "^4.65.1"
+    "rollup": "^4.67.4"
   }
 }
