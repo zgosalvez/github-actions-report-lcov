@@ -1,4 +1,3 @@
-const lcovTotal = require("lcov-total");
 const os = require('os');
 const path = require('path');
 const { normalizeCoverageFiles } = require('./lcov');
@@ -37,6 +36,8 @@ async function run() {
 
     // Keep coverage outputs based on the original tracefiles.
     const coverageFile = await mergeCoverages(coverageFiles, tmpPath);
+    // Use standard const `lcovTotal = require("lcov-total");` when https://github.com/simonecorsi/lcov-total/pull/579 is released (merged, not yet published to npm)
+    const { default: lcovTotal } = await import('lcov-total/src/index.js');
     const totalCoverage = lcovTotal(coverageFile);
     const minimumCoverage = core.getInput('minimum-coverage');
     const gitHubToken = core.getInput('github-token').trim();
